@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 
 class AuthService {
-  // ⚠️ PENTING BANGET, LANG!
-  // Kalau kamu tes pakai Emulator Android: pakai http://10.0.2.2:8000/api
-  // Kalau kamu tes pakai HP Fisik pakai kabel data: pakai IP Laptopmu (misal: http://192.168.1.5:8000/api)
-  final String baseUrl = 'http://192.168.1.7:8000/api'; 
+
+  final String baseUrl = ApiConfig.baseUrl; // IP Pusat
 
   // 1. Fungsi Login
   Future<bool> login(String email, String password) async {
@@ -41,15 +40,14 @@ class AuthService {
     }
   }
 
-  // 2. Fungsi Register
-  Future<bool> register(String namaBunda, String namaAnak, String email, String password) async {
+  // 2. Fungsi Register (Nama Anak Dihapus)
+  Future<Map<String, dynamic>> register(String namaBunda, String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': namaBunda, 
-          'nama_anak': namaAnak,
           'email': email,
           'password': password,
         }),
@@ -57,13 +55,28 @@ class AuthService {
 
       // Laravel biasanya membalas dengan status 201 (Created) atau 200 (OK)
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return true; // Register sukses!
+        return {'success': true, 'message': 'Pendaftaran berhasil'};
       } else {
-        return false; // Register gagal
+        // Coba ambil pesan error dari response backend jika ada
+        String errorMessage = 'Pendaftaran gagal! Coba lagi.';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) {
+            errorMessage = data['message'];
+          } else if (data['errors'] != null) {
+            // Gabungkan semua pesan error validasi
+            final errors = data['errors'] as Map<String, dynamic>;
+            errorMessage = errors.values.map((v) => v[0]).join(', ');
+          }
+        } catch (_) {
+          // Jika gagal parse JSON, gunakan default message ditambah status code
+          errorMessage = 'Gagal (Status: ${response.statusCode}). Detail: ${response.body}';
+        }
+        return {'success': false, 'message': errorMessage};
       }
     } catch (e) {
       print('Error Register: $e');
-      return false;
+      return {'success': false, 'message': 'Tidak dapat mendaftar: $e'};
     }
   }
 

@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 
 class AnakService {
-  // Pakai IP laptopmu yang kemarin ya
-  final String baseUrl = 'http://192.168.1.7:8000/api'; 
+  // Mengambil dari pusat kontrol IP
+  final String baseUrl = ApiConfig.baseUrl;
 
   Future<bool> simpanData(Map<String, dynamic> dataAnak) async {
     try {
@@ -31,6 +32,31 @@ class AnakService {
       }
     } catch (e) {
       print('Error kirim data anak: $e');
+      return false;
+    }
+  }
+
+  // Menerbangkan data Edit (PUT) ke Server
+  Future<bool> editData(String idAnak, Map<String, dynamic> dataAnak) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/anak/$idAnak'), 
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(dataAnak),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
       return false;
     }
   }

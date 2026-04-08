@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Stunt-Check',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF009888), 
+        primaryColor: const Color(0xFF2563EB), 
       ),
       
       // Kita pakai FutureBuilder buat ngecek token pas aplikasi pertama kali dibuka
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
             return const Scaffold(
               backgroundColor: Colors.white,
               body: Center(
-                child: CircularProgressIndicator(color: Color(0xFF009888)),
+                child: CircularProgressIndicator(color: Color(0xFF2563EB)),
               ),
             );
           }
