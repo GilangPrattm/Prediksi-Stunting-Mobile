@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'register_page.dart';
-// ⚠️ PERHATIAN: Sesuaikan letak import auth_service ini kalau kamu taruh di dalam folder khusus
-import '/services/auth_service.dart'; 
+import '/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,44 +11,50 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // 1. Siapkan 'Penangkap Ketikan' (Controller)
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   
-  // 2. Siapkan variabel loading dan kurir API
   bool _isLoading = false;
+  bool _isPasswordHidden = true;
   final AuthService _authService = AuthService();
 
-  // Fungsi saat tombol login ditekan
-  void _prosesLogin() async {
-    setState(() {
-      _isLoading = true; // Nyalakan efek loading
-    });
+  // Warna Tema (Asklepios Style)
+  final Color kPrimary = const Color(0xFF0D9488); // Premium Teal
+  final Color kBackground = const Color(0xFFF8FAFC); // Slate 50
+  final Color kTextDark = const Color(0xFF1E293B); // Slate 800
+  final Color kTextLight = const Color(0xFF64748B); // Slate 500
 
-    // Panggil fungsi login dari AuthService
+  void _prosesLogin() async {
+    setState(() => _isLoading = true);
+
     bool sukses = await _authService.login(
       _emailController.text,
       _passwordController.text,
     );
 
-    setState(() {
-      _isLoading = false; // Matikan efek loading
-    });
+    setState(() => _isLoading = false);
 
     if (sukses) {
-      // Kalau berhasil, pindah ke HomePage dan hapus riwayat halaman (biar ga bisa di-back ke login)
       if (!mounted) return;
+      // Navigasi dengan animasi Fade yang smooth
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
       );
     } else {
-      // Kalau gagal, munculkan peringatan (SnackBar) di bawah layar
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login gagal! Cek kembali email dan password Bunda.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Login gagal! Cek kembali email dan password Bunda.'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -57,140 +62,180 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF009888);
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Melengkung
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 80, bottom: 40),
-              decoration: const BoxDecoration(
-                color: primaryColor,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
-              ),
+      backgroundColor: kBackground,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
+            // Animasi Fade & Slide Up saat halaman diload
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Transform.translate(
+                  offset: Offset(0, 40 * (1 - value)),
+                  child: Opacity(opacity: value, child: child),
+                );
+              },
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2), // Warning biru sudah diperbaiki
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(Icons.monitor_heart_outlined, color: Colors.white, size: 40),
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'Stunt-Check',
-                    style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'Pantau optimal tumbuh kembang si kecil',
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Form Login
-            Padding(
-              padding: const EdgeInsets.all(30.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Selamat Datang!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                  const SizedBox(height: 30),
-                  
-                  // Input Email
-                  const Text('Email', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _emailController, // Pasang controllernya di sini
-                    decoration: InputDecoration(
-                      hintText: 'bunda@email.com',
-                      prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Input Password
-                  const Text('Password', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _passwordController, // Pasang controllernya di sini
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: '••••••••',
-                      prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Lupa Password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text('Lupa Password?', style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600)),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Tombol Masuk
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      // Kalau lagi loading, tombolnya dimatikan (null) biar ga diklik dua kali
-                      onPressed: _isLoading ? null : _prosesLogin, 
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  // Logo & Judul
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kPrimary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                      child: _isLoading 
-                          ? const CircularProgressIndicator(color: Colors.white) // Animasi loading
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Masuk', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                                SizedBox(width: 10),
-                                Icon(Icons.arrow_forward, color: Colors.white),
-                              ],
+                      child: Icon(Icons.monitor_heart_outlined, color: kPrimary, size: 48),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Selamat Datang,\nBunda!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: kTextDark, height: 1.2),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Mari pantau tumbuh kembang\nsi kecil bersama Stunt-Check.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: kTextLight, height: 1.4),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Form Container (Clean Card Look)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInputField(
+                          label: 'Email Address',
+                          hint: 'bunda@email.com',
+                          icon: Icons.email_outlined,
+                          controller: _emailController,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildInputField(
+                          label: 'Password',
+                          hint: '••••••••',
+                          icon: Icons.lock_outline,
+                          controller: _passwordController,
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Lupa Password?',
+                            style: TextStyle(color: kPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        
+                        // Tombol Login
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _prosesLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
+                            child: _isLoading 
+                                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                                : const Text('Masuk Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 30),
 
-                  // Daftar
+                  // Register Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Belum punya akun? ', style: TextStyle(color: Colors.grey)),
+                      Text('Belum punya akun? ', style: TextStyle(color: kTextLight)),
                       GestureDetector(
                         onTap: () {
-                          // Navigasi ke Halaman Register
+                          // Navigasi dengan animasi fade
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const RegisterPage()),
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => const RegisterPage(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(opacity: animation, child: child);
+                              },
+                              transitionDuration: const Duration(milliseconds: 300),
+                            ),
                           );
                         },
-                        child: const Text('Daftar sekarang', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                        child: Text('Daftar di sini', style: TextStyle(color: kPrimary, fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  // Helper function untuk membuat input yang rapi (UI Clean)
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+    bool isPassword = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: kTextDark, fontSize: 13)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword ? _isPasswordHidden : false,
+          style: TextStyle(color: kTextDark, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
+            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 22),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(_isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade500, size: 22),
+                    onPressed: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
+                  )
+                : null,
+            filled: true,
+            fillColor: kBackground, // Abu-abu sangat muda
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+      ],
     );
   }
 }
