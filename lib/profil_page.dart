@@ -144,159 +144,175 @@ class _ProfilPageState extends State<ProfilPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF0052cc); // Warna biru khas dari gambar referensi
+    const Color primaryColor = Color(0xFF0D9488); // Teal Color
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB), // Warna latar belakang abu-abu sangat muda/kebiruan
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 15.0, top: 8, bottom: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 18),
-              onPressed: () {
-                // Biasanya AppBar otomatis menangani Pop, tapi karena diletakkan di HomePage (IndexedStack),
-                // Poping akan keluar dari App. Jika dalam navigation bar biasa, leading sering kali disembunyikan.
-                // Tapi kita sediakan untuk interaksi manual bila perlu.
-                if (Navigator.canPop(context)) Navigator.pop(context);
-              },
-            ),
-          ),
-        ),
-        title: const Text('My Account', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-        centerTitle: false,
-      ),
-      body: _isLoading ? const Center(child: CircularProgressIndicator(color: primaryBlue)) 
-      : RefreshIndicator(
-        onRefresh: _fetchProfil,
-        color: primaryBlue,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Kartu Profil Biru
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: primaryBlue,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(color: primaryBlue.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5))
-                  ]
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Text(_inisial, style: const TextStyle(color: primaryBlue, fontSize: 24, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_nama, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 5),
-                          Text(_email, style: const TextStyle(color: Colors.white70, fontSize: 13), overflow: TextOverflow.ellipsis),
-                        ],
+      backgroundColor: const Color(0xFFF8FAFC), 
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator(color: primaryColor)) 
+        : RefreshIndicator(
+            onRefresh: _fetchProfil,
+            color: primaryColor,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // HEADER TEAL & KARTU PROFIL OVERLAP
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.topCenter,
+                    children: [
+                      // Latar Hijau Tosca Atas
+                      Container(
+                        height: 220,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(40),
+                            bottomRight: Radius.circular(40),
+                          ),
+                        ),
+                        padding: const EdgeInsets.only(top: 60, left: 20, right: 20),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Akun Saya', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                            Icon(Icons.settings_outlined, color: Colors.white),
+                          ],
+                        ),
                       ),
+                      
+                      // Kartu Profil Putih (Mengambang)
+                      Container(
+                        margin: const EdgeInsets.only(top: 110, left: 20, right: 20),
+                        padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5)),
+                          ]
+                        ),
+                        child: Column(
+                          children: [
+                            // Foto Profil + Icon Edit
+                            Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.grey.shade200,
+                                  child: Text(_inisial, style: const TextStyle(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold)),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: primaryColor, shape: BoxShape.circle),
+                                  child: const Icon(Icons.person_outline, color: Colors.white, size: 16),
+                                )
+                              ],
+                            ),
+                            const SizedBox(height: 15),
+                            
+                            // Nama dan Deskripsi
+                            Text('Bunda $_nama', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                            const SizedBox(height: 5),
+                            const Text('Ibu dari -', style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+                            
+                            const SizedBox(height: 25),
+                            
+                            // Kontak Email & Telepon
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.email_outlined, color: primaryColor, size: 18),
+                                const SizedBox(width: 8),
+                                Text(_email.isNotEmpty ? _email : '-', style: const TextStyle(color: Color(0xFF475569), fontSize: 13)),
+                                const SizedBox(width: 15),
+                                const Icon(Icons.phone_outlined, color: primaryColor, size: 18),
+                                const SizedBox(width: 8),
+                                const Expanded(child: Text('-', style: TextStyle(color: Color(0xFF475569), fontSize: 13), overflow: TextOverflow.ellipsis)),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 25),
+                  
+                  // MENU LIST
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildMenuItem('Edit Profil', Icons.person_outline, onTap: () async {
+                           final refresh = await Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilPage()));
+                           if (refresh == true) _fetchProfil();
+                        }),
+                        _buildMenuItem('Ubah Kata Sandi', Icons.lock_outline, onTap: _ubahKataSandi),
+                        _buildMenuItem('Bantuan & FAQ', Icons.help_outline, onTap: () {}),
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Tombol Keluar Merah
+                        GestureDetector(
+                          onTap: _keluar,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.logout, color: Colors.red, size: 20),
+                                SizedBox(width: 10),
+                                Text('Keluar Akun', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: () async {
-                        final refresh = await Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilPage()));
-                        if (refresh == true) _fetchProfil();
-                      },
-                      icon: const Icon(Icons.edit_square, color: Colors.white),
-                    )
-                  ],
-                ),
+                  )
+                ],
               ),
-              const SizedBox(height: 25),
+            ),
+      ),
+    );
+  }
 
-              // General Settings
-              _buildSectionTitle('General Settings'),
-              _buildMenuCard(context, children: [
-                _buildListTile(icon: Icons.person_outline, title: 'Personal Info', onTap: () {}),
-                _buildDivider(),
-                _buildListTile(icon: Icons.notifications_none, title: 'Notification', onTap: () {}),
-                _buildDivider(),
-                _buildListTile(icon: Icons.settings_outlined, title: 'Preferences', onTap: () {}),
-                _buildDivider(),
-                _buildListTile(icon: Icons.lock_outline, title: 'Security', onTap: _ubahKataSandi),
-              ]),
-
-              // Accessibility
-              _buildSectionTitle('Accessibility'),
-              _buildMenuCard(context, children: [
-                _buildListTile(icon: Icons.flag_outlined, title: 'Language', onTap: () {}),
-                _buildDivider(),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.visibility_outlined, color: Colors.black87, size: 20),
-                  ),
-                  title: const Text('Dark Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
-                  trailing: Switch(
-                    value: false, // Default false sementara
-                    onChanged: (val) {},
-                    activeColor: primaryBlue,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                ),
-              ]),
-
-              // Help & Support
-              _buildSectionTitle('Help & Support'),
-              _buildMenuCard(context, children: [
-                _buildListTile(icon: Icons.help_outline, title: 'About', onTap: () {}),
-                _buildDivider(),
-                _buildListTile(icon: Icons.message_outlined, title: 'Help Center', onTap: () {}),
-                _buildDivider(),
-                _buildListTile(icon: Icons.phone_outlined, title: 'Contact Us', onTap: () {}),
-              ]),
-
-              // Sign Out
-              _buildSectionTitle('Sign Out'),
-              _buildMenuCard(context, children: [
-                _buildListTile(icon: Icons.logout, title: 'Sign Out', onTap: _keluar),
-              ]),
-
-              // Danger Zone
-              _buildSectionTitle('Danger Zone'),
-              Container(
-                margin: const EdgeInsets.only(bottom: 30),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.delete_outline, color: Colors.white, size: 20),
-                  ),
-                  title: const Text('Delete Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.red)),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.red),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur Delete Account belum tersedia.')));
-                  },
-                ),
-              ),
-
-            ],
-          ),
+  Widget _buildMenuItem(String title, IconData icon, {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF0D9488).withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: const Color(0xFF0D9488), size: 20),
+            ),
+            const SizedBox(width: 15),
+            Expanded(child: Text(title, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w600))),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
         ),
       ),
     );

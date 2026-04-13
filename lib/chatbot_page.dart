@@ -121,20 +121,20 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF2563EB);
+    const Color primaryColor = Color(0xFF0D9488); // Teal color
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Row(
           children: [
-            const CircleAvatar(radius: 16, backgroundColor: Colors.white, child: Icon(Icons.cloud_done, color: primaryColor, size: 18)),
+            const CircleAvatar(radius: 16, backgroundColor: Colors.white, child: Icon(Icons.smart_toy, color: primaryColor, size: 18)),
             const SizedBox(width: 10),
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Kila Chatbot (Server)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('Pakar Gizi Eksekusi Laravel', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                Text('Kila AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('• Online', style: TextStyle(fontSize: 11, color: Colors.white70)),
               ],
             ),
           ],
@@ -175,11 +175,24 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   children: [
                     const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)),
                     const SizedBox(width: 10),
-                    Text('Menembak API Server Laravel...', style: TextStyle(color: Colors.grey[500], fontSize: 13, fontStyle: FontStyle.italic)),
+                    Text('Mengetik...', style: TextStyle(color: Colors.grey[500], fontSize: 13, fontStyle: FontStyle.italic)),
                   ],
                 ),
               ),
             ),
+
+          // Suggestion Pills
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                _buildSuggestionPill('Apa MPASI yang bagus untuk usia 8 bulan?'),
+                _buildSuggestionPill('Berapa berat ideal anak 1 tahun?'),
+                _buildSuggestionPill('Cara menaikkan berat badan balita'),
+              ],
+            ),
+          ),
 
           // Area Keyboard Input
           Container(
@@ -187,11 +200,13 @@ class _ChatbotPageState extends State<ChatbotPage> {
             decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
             child: Row(
               children: [
+                const Icon(Icons.mood, color: Colors.grey),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _msgController,
                     decoration: InputDecoration(
-                      hintText: 'Tanyakan gizi ke server...',
+                      hintText: 'Tanya Kila...',
                       filled: true,
                       fillColor: Colors.grey[100],
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -205,8 +220,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   onTap: _isLoading ? null : _kirimPesan,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: primaryColor, shape: BoxShape.circle),
-                    child: const Icon(Icons.send, color: Colors.white, size: 20),
+                    decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
+                    child: const Icon(Icons.send, color: Color(0xFFcbd5e1), size: 20),
                   ),
                 )
               ],
@@ -217,34 +232,64 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  Widget _buildPesanBubble(bool isUser, String isian, Color primaryColor) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+  Widget _buildSuggestionPill(String text) {
+    return GestureDetector(
+      onTap: () {
+        _msgController.text = text;
+        _kirimPesan();
+      },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue[50] : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : const Radius.circular(20),
-          ),
-          border: Border.all(color: isUser ? Colors.blue.shade100 : Colors.grey.shade200),
-          boxShadow: [if (!isUser) BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5, offset: const Offset(0, 2))],
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(20),
         ),
-        padding: const EdgeInsets.all(15),
-        child: isUser 
-          ? Text(isian, style: const TextStyle(color: Colors.black87, fontSize: 14))
-          : MarkdownBody(
-              data: isian,
-              styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(fontSize: 14, color: Colors.black87),
-                strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-              ),
-            ),
+        child: Text(text, style: const TextStyle(color: Color(0xFF0D9488), fontSize: 13, fontWeight: FontWeight.bold)),
       ),
+    );
+  }
+
+  Widget _buildPesanBubble(bool isUser, String isian, Color primaryColor) {
+    return Row(
+      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!isUser) // Icon Bot
+          Container(
+            margin: const EdgeInsets.only(right: 8, bottom: 12),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: primaryColor.withOpacity(0.2), shape: BoxShape.circle),
+            child: Icon(Icons.smart_toy, color: primaryColor, size: 16),
+          ),
+        
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.70),
+          decoration: BoxDecoration(
+            color: isUser ? primaryColor : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
+              bottomRight: isUser ? Radius.zero : const Radius.circular(20),
+            ),
+            border: Border.all(color: isUser ? primaryColor : Colors.grey.shade200),
+            boxShadow: [if (!isUser) BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5, offset: const Offset(0, 2))],
+          ),
+          padding: const EdgeInsets.all(15),
+          child: isUser 
+            ? Text(isian, style: const TextStyle(color: Colors.white, fontSize: 14))
+            : MarkdownBody(
+                data: isian,
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(fontSize: 14, color: Colors.black87),
+                  strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+              ),
+        ),
+      ],
     );
   }
 }
