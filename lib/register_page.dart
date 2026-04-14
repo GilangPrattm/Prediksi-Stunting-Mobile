@@ -18,7 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final AuthService _authService = AuthService();
 
   // Warna Tema
-  final Color kPrimary = const Color(0xFF0D9488);
+  final Color kPrimary = const Color(0xFFBFDBFE);
   final Color kBackground = const Color(0xFFF8FAFC);
   final Color kTextDark = const Color(0xFF1E293B);
   final Color kTextLight = const Color(0xFF64748B);
@@ -39,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Pendaftaran sukses! Silakan login.'),
-          backgroundColor: Colors.green.shade500,
+          backgroundColor: const Color(0xFFBFDBFE),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -69,7 +69,7 @@ class _RegisterPageState extends State<RegisterPage> {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
             ]),
             child: const Icon(Icons.arrow_back, color: Colors.black87, size: 20),
           ),
@@ -108,7 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
+                        color: Colors.black.withOpacity(0.03),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -150,8 +150,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           child: _isLoading
-                              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                              : const Text('Daftar Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFF1E293B), strokeWidth: 2.5))
+                              : const Text('Daftar Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                         ),
                       ),
                     ],
@@ -165,7 +165,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     Text('Sudah punya akun? ', style: TextStyle(color: kTextLight)),
                     GestureDetector(
                       onTap: () => Navigator.pop(context), 
-                      child: Text('Masuk di sini', style: TextStyle(color: kPrimary, fontWeight: FontWeight.w700)),
+                      child: Text('Masuk di sini', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -196,10 +196,10 @@ class _RegisterPageState extends State<RegisterPage> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 22),
+            prefixIcon: Icon(icon, color: Colors.grey.shade700, size: 22),
             suffixIcon: isPassword
                 ? IconButton(
-                    icon: Icon(_isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade500, size: 22),
+                    icon: Icon(_isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade700, size: 22),
                     onPressed: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
                   )
                 : null,

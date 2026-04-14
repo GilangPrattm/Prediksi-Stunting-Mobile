@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
 
   // Warna Tema (Asklepios Style)
-  final Color kPrimary = const Color(0xFF0D9488); // Premium Teal
+  final Color kPrimary = const Color(0xFFBFDBFE); // Light Blue
   final Color kBackground = const Color(0xFFF8FAFC); // Slate 50
   final Color kTextDark = const Color(0xFF1E293B); // Slate 800
   final Color kTextLight = const Color(0xFF64748B); // Slate 500
@@ -88,10 +88,10 @@ class _LoginPageState extends State<LoginPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: kPrimary.withValues(alpha: 0.1),
+                        color: kPrimary.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.monitor_heart_outlined, color: kPrimary, size: 48),
+                      child: Icon(Icons.monitor_heart_outlined, color: Color(0xFF1E293B), size: 48),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -116,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color: Colors.black.withOpacity(0.03),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                           alignment: Alignment.centerRight,
                           child: Text(
                             'Lupa Password?',
-                            style: TextStyle(color: kPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -161,8 +161,8 @@ class _LoginPageState extends State<LoginPage> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                             child: _isLoading 
-                                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                                : const Text('Masuk Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFF1E293B), strokeWidth: 2.5))
+                                : const Text('Masuk Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                           ),
                         ),
                       ],
@@ -189,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           );
                         },
-                        child: Text('Daftar di sini', style: TextStyle(color: kPrimary, fontWeight: FontWeight.w700)),
+                        child: Text('Daftar di sini', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -222,10 +222,10 @@ class _LoginPageState extends State<LoginPage> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 22),
+            prefixIcon: Icon(icon, color: Colors.grey.shade700, size: 22),
             suffixIcon: isPassword
                 ? IconButton(
-                    icon: Icon(_isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade500, size: 22),
+                    icon: Icon(_isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade700, size: 22),
                     onPressed: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
                   )
                 : null,
