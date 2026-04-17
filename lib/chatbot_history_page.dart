@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'chatbot_page.dart';
 
 class ChatbotHistoryPage extends StatefulWidget {
   const ChatbotHistoryPage({super.key});
@@ -37,6 +37,34 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
     setState(() {
       _historyList.clear();
     });
+  }
+
+  void _deleteSession(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _historyList.removeAt(index);
+    });
+    await prefs.setString('chat_sessions', jsonEncode(_historyList));
+  }
+
+  void _continueSession(Map<String, dynamic> session) {
+    List rawMsgs = session['messages'] ?? [];
+    List<Map<String, String>> messages = rawMsgs.map<Map<String, String>>((m) {
+      return {
+        'sender': m['sender']?.toString() ?? 'ai',
+        'text': m['text']?.toString() ?? '',
+      };
+    }).toList();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatbotPage(
+          sessionId: session['id'],
+          initialMessages: messages,
+        ),
+      ),
+    );
   }
 
   @override
@@ -100,50 +128,90 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                           }
                       }
 
-                      return GestureDetector(
-                        onTap: () {
-                          _showDetail(context, msgs);
-                        },
-                        child: Container(
+                      return Dismissible(
+                        key: Key(session['id'] ?? index.toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
                           margin: const EdgeInsets.only(bottom: 15),
-                          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                          padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: Colors.white, // Tampilan berbayang halus
+                            color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.grey.shade100),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 5))]
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFa7f3d0), // Light Pastel Teal
-                                  borderRadius: BorderRadius.circular(12),
+                          child: const Icon(Icons.delete_outline, color: Colors.red),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return await showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Hapus Sesi Ini?'),
+                              content: const Text('Percakapan ini akan dihapus dari riwayat.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+                              ],
+                            ),
+                          );
+                        },
+                        onDismissed: (_) => _deleteSession(index),
+                        child: GestureDetector(
+                          onTap: () => _continueSession(session),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 15),
+                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey.shade100),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 5))]
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFa7f3d0),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.chat_bubble_outline, color: primaryColor, size: 24),
                                 ),
-                                child: const Icon(Icons.chat_bubble_outline, color: primaryColor, size: 24),
-                              ),
-                              const SizedBox(width: 15),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      firstMessage.length > 35 ? '${firstMessage.substring(0, 35)}...' : firstMessage,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      '${session['date'].toString().split('.').first.replaceAll('T', ' • ')}',
-                                      style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                                    ),
-                                  ],
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        firstMessage.length > 35 ? '${firstMessage.substring(0, 35)}...' : firstMessage,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        session['date'].toString().split('.').first.replaceAll('T', ' \u2022 '),
+                                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-                            ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('Lanjutkan', style: TextStyle(color: primaryColor, fontSize: 11, fontWeight: FontWeight.w600)),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_forward_ios, color: primaryColor, size: 10),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -159,57 +227,5 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
     );
   }
 
-  void _showDetail(BuildContext context, List msgs) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20))
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                height: 5, width: 50,
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(15.0),
-                child: Text('Kilas Balik Percakapan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  reverse: true, // Mengikuti chatbot yang disusun dari paling bawah
-                  padding: const EdgeInsets.all(15),
-                  itemCount: msgs.length,
-                  itemBuilder: (context, idx) {
-                    bool isUser = msgs[idx]['sender'] == 'user';
-                    String text = msgs[idx]['text'];
-                    return Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-                        decoration: BoxDecoration(
-                          color: isUser ? Colors.blue[50] : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        child: MarkdownBody(data: text),
-                      ),
-                    );
-                  },
-                ),
-              )
-            ],
-          ),
-        );
-      }
-    );
-  }
+
 }
