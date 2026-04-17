@@ -80,7 +80,7 @@ class _CekGiziFormState extends State<CekGiziForm> {
         if (!mounted) return;
         Navigator.pop(context); // Tutup Pop-Up
         widget.onSuccess(); // Perintahkan Beranda me-refresh
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Histori Pengukuran Berhasil Disimpan & Dikalkulasi!'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Histori Pengukuran Berhasil Disimpan & Dikalkulasi!'), backgroundColor: Color(0xFFBFDBFE)));
       } else {
         final dataErr = jsonDecode(response.body);
         if (!mounted) return;
@@ -162,8 +162,8 @@ class _CekGiziFormState extends State<CekGiziForm> {
               onPressed: _isLoading ? null : _simpanHistori, 
               style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
               child: _isLoading 
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('Simpan Pengukuran (Panggil AI)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ? const CircularProgressIndicator(color: Color(0xFF1E293B))
+                : const Text('Simpan Pengukuran (Panggil AI)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             ),
           ),
         ],

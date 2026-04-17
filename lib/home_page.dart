@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fl_chart/fl_chart.dart';
 
-import 'services/auth_service.dart';
-import 'login_page.dart';
 import 'tambah_anak_page.dart';
-import 'edit_anak_page.dart';
 import 'profil_page.dart';
 import 'edit_profil_page.dart';
 import 'config/api_config.dart';
@@ -22,11 +18,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
   final String _baseUrl = ApiConfig.baseUrl;
 
   List<dynamic> _daftarAnak = [];
-  bool _isLoadingAnak = true; 
+  bool _isLoadingAnak = true;
   int _anakTerpilihIndeks = 0;
   String _namaBunda = '';
   List<dynamic> _daftarResep = [];
@@ -35,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchProfilDanAnak(); 
+    _fetchProfilDanAnak();
   }
 
   Future<void> _fetchProfilDanAnak() async {
@@ -45,14 +41,20 @@ class _HomePageState extends State<HomePage> {
     if (token == null) return;
 
     try {
-      final resCekIbu = await http.get(Uri.parse('$_baseUrl/profil-ibu'), headers: {'Authorization': 'Bearer $token'});
+      final resCekIbu = await http.get(
+        Uri.parse('$_baseUrl/profil-ibu'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       if (resCekIbu.statusCode == 404) {
         setState(() => _isProfilIbuLengkap = false);
       } else {
         setState(() => _isProfilIbuLengkap = true);
       }
 
-      final resProfil = await http.get(Uri.parse('$_baseUrl/profil'), headers: {'Authorization': 'Bearer $token'});
+      final resProfil = await http.get(
+        Uri.parse('$_baseUrl/profil'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       if (resProfil.statusCode == 200) {
         final dataProfil = jsonDecode(resProfil.body);
         setState(() {
@@ -60,7 +62,10 @@ class _HomePageState extends State<HomePage> {
         });
       }
 
-      final resAnak = await http.get(Uri.parse('$_baseUrl/anak'), headers: {'Authorization': 'Bearer $token'});
+      final resAnak = await http.get(
+        Uri.parse('$_baseUrl/anak'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       if (resAnak.statusCode == 200) {
         final dataAnak = jsonDecode(resAnak.body);
         setState(() {
@@ -71,13 +76,15 @@ class _HomePageState extends State<HomePage> {
         setState(() => _isLoadingAnak = false);
       }
 
-      final resMakanan = await http.get(Uri.parse('$_baseUrl/makanan'), headers: {'Authorization': 'Bearer $token'});
+      final resMakanan = await http.get(
+        Uri.parse('$_baseUrl/makanan'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       if (resMakanan.statusCode == 200) {
         setState(() {
           _daftarResep = jsonDecode(resMakanan.body)['data'];
         });
       }
-
     } catch (e) {
       print("Error Fetching API: $e");
       setState(() => _isLoadingAnak = false);
@@ -85,11 +92,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _hitungUmur(String? tglLahirStr) {
-    if (tglLahirStr == null || tglLahirStr.isEmpty) return 'Umur Tidak Diketahui';
+    if (tglLahirStr == null || tglLahirStr.isEmpty) {
+      return 'Umur Tidak Diketahui';
+    }
     try {
       DateTime birthDate = DateTime.parse(tglLahirStr);
       DateTime today = DateTime.now();
-      int months = (today.year - birthDate.year) * 12 + today.month - birthDate.month;
+      int months =
+          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
       if (today.day < birthDate.day) {
         months--;
       }
@@ -97,7 +107,9 @@ class _HomePageState extends State<HomePage> {
       if (months < 12) return '$months Bulan';
       int years = months ~/ 12;
       int remainingMonths = months % 12;
-      return remainingMonths == 0 ? '$years Tahun' : '$years Tahun $remainingMonths Bulan';
+      return remainingMonths == 0
+          ? '$years Tahun'
+          : '$years Tahun $remainingMonths Bulan';
     } catch (e) {
       return '-';
     }
@@ -108,7 +120,8 @@ class _HomePageState extends State<HomePage> {
     try {
       DateTime birthDate = DateTime.parse(tglLahirStr);
       DateTime today = DateTime.now();
-      int months = (today.year - birthDate.year) * 12 + today.month - birthDate.month;
+      int months =
+          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
       if (today.day < birthDate.day) {
         months--;
       }
@@ -125,37 +138,51 @@ class _HomePageState extends State<HomePage> {
       _buildBeranda(),
       const SizedBox.shrink(), // Dummy index 1 (Cek Stunting)
       _buildEdukasiResep(),
-      const ChatbotPage(),     // Kila AI
-      const ProfilPage(),      // Akun Saya
+      const ChatbotPage(), // Kila AI
+      const ProfilPage(), // Akun Saya
     ];
 
-    const Color primaryColor = Color(0xFF0D9488);
+    const Color primaryColor = Color(0xFFBFDBFE);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), 
+      backgroundColor: const Color(0xFFF8FAFC),
       body: pages[_selectedIndex],
-      
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey.shade400,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 10),
+        selectedItemColor: Color(0xFF1E293B),
+        unselectedItemColor: Colors.grey.shade600,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.normal,
+          fontSize: 10,
+        ),
         elevation: 20,
         backgroundColor: Colors.white,
         onTap: (index) {
-          if (index == 1) { // CEK STUNTING DI-INTERCEPT
+          if (index == 1) {
+            // CEK STUNTING DI-INTERCEPT
             if (_daftarAnak.isNotEmpty) {
               var anakAktif = _daftarAnak[_anakTerpilihIndeks];
               int umurBulanAsli = _dapatkanUmurBulan(anakAktif['tgl_lahir']);
-              tampilDialogCekGizi(context, anakAktif, umurBulanAsli, _fetchProfilDanAnak);
+              tampilDialogCekGizi(
+                context,
+                anakAktif,
+                umurBulanAsli,
+                _fetchProfilDanAnak,
+              );
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Tambahkan data anak terlebih dahulu!'), 
-                backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating, 
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tambahkan data anak terlebih dahulu!'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             }
           } else {
             setState(() {
@@ -164,11 +191,31 @@ class _HomePageState extends State<HomePage> {
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home_rounded), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_turned_in_outlined), activeIcon: Icon(Icons.assignment_turned_in), label: 'Cek Stunting'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu_outlined), activeIcon: Icon(Icons.restaurant_menu), label: 'MPASI'),
-          BottomNavigationBarItem(icon: Icon(Icons.smart_toy_outlined), activeIcon: Icon(Icons.smart_toy), label: 'Kila AI'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Akun Saya'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home_rounded),
+            label: 'Beranda',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_turned_in_outlined),
+            activeIcon: Icon(Icons.assignment_turned_in),
+            label: 'Cek Stunting',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_menu_outlined),
+            activeIcon: Icon(Icons.restaurant_menu),
+            label: 'MPASI',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy_outlined),
+            activeIcon: Icon(Icons.smart_toy),
+            label: 'Kila AI',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Akun Saya',
+          ),
         ],
       ),
     );
@@ -194,20 +241,26 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     // ===== HEADER TEAL EDGE-TO-EDGE =====
                     _buildHeaderSesuaiGambar(),
-                    
+
                     // ===== KARTU ANAK MENGAMBANG =====
                     Container(
-                      margin: const EdgeInsets.only(top: 130, left: 20, right: 20),
-                      child: _isLoadingAnak 
-                        ? const Center(child: CircularProgressIndicator())
-                        : (hasData ? _buildKartuAnakSesuaiGambar() : _buildKartuAnakKosong()),
+                      margin: const EdgeInsets.only(
+                        top: 130,
+                        left: 20,
+                        right: 20,
+                      ),
+                      child: _isLoadingAnak
+                          ? const Center(child: CircularProgressIndicator())
+                          : (hasData
+                                ? _buildKartuAnakSesuaiGambar()
+                                : _buildKartuAnakKosong()),
                     ),
                   ],
                 ),
-                
+
                 // Margin dinamis untuk mengimbangi overlap kartu anak
                 const SizedBox(height: 100),
-                
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Column(
@@ -219,38 +272,75 @@ class _HomePageState extends State<HomePage> {
                           margin: const EdgeInsets.only(bottom: 25),
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF14B8A6), // Teal terang
+                            color: const Color(0xFFBFDBFE), // Light Blue
                             borderRadius: BorderRadius.circular(25),
-                            boxShadow: [BoxShadow(color: const Color(0xFF14B8A6).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFFBFDBFE).withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Waktunya Cek Gizi!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              const Text(
+                                'Waktunya Cek Gizi!',
+                                style: TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               const SizedBox(height: 8),
-                              const Text('Pastikan tumbuh kembang si kecil sesuai dengan usianya.', style: TextStyle(color: Colors.white, fontSize: 13)),
+                              const Text(
+                                'Pastikan tumbuh kembang si kecil sesuai dengan usianya.',
+                                style: TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 13,
+                                ),
+                              ),
                               const SizedBox(height: 15),
                               ElevatedButton(
                                 onPressed: () {
-                                  var anakAktif = _daftarAnak[_anakTerpilihIndeks];
-                                  int umurBulanAsli = _dapatkanUmurBulan(anakAktif['tgl_lahir']);
-                                  tampilDialogCekGizi(context, anakAktif, umurBulanAsli, _fetchProfilDanAnak);
+                                  var anakAktif =
+                                      _daftarAnak[_anakTerpilihIndeks];
+                                  int umurBulanAsli = _dapatkanUmurBulan(
+                                    anakAktif['tgl_lahir'],
+                                  );
+                                  tampilDialogCekGizi(
+                                    context,
+                                    anakAktif,
+                                    umurBulanAsli,
+                                    _fetchProfilDanAnak,
+                                  );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF0D9488),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)
+                                  foregroundColor: const Color(0xFF1E293B),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text('Cek Gizi Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      'Cek Gizi Sekarang',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                     SizedBox(width: 5),
-                                    Icon(Icons.chevron_right, size: 18)
+                                    Icon(Icons.chevron_right, size: 18, color: Color(0xFF1E293B)),
                                   ],
                                 ),
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -259,16 +349,38 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Tips Hari Ini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                          Text('Lihat Semua', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF0D9488))),
+                          const Text(
+                            'Tips Hari Ini',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                          Text(
+                            'Lihat Semua',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 15),
-                      
-                      _buildTipsCardLama('Pentingnya Sayur Hijau untuk Anak', 'Oleh Dr. Kila • 3 min read', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'),
+
+                      _buildTipsCardLama(
+                        'Pentingnya Sayur Hijau untuk Anak',
+                        'Oleh Dr. Kila • 3 min read',
+                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+                      ),
                       const SizedBox(height: 12),
-                      _buildTipsCardLama('Pola Tidur yang Memicu Pertumbuhan', 'Oleh Dr. Kila • 5 min read', 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400'),
-                      const SizedBox(height: 50), 
+                      _buildTipsCardLama(
+                        'Pola Tidur yang Memicu Pertumbuhan',
+                        'Oleh Dr. Kila • 5 min read',
+                        'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400',
+                      ),
+                      const SizedBox(height: 50),
                     ],
                   ),
                 ),
@@ -283,13 +395,13 @@ class _HomePageState extends State<HomePage> {
   // --- KOMPONEN HEADER BARU ---
   Widget _buildHeaderSesuaiGambar() {
     String displayNama = _namaBunda.isNotEmpty ? _namaBunda : 'Bunda';
-    
+
     return Container(
       width: double.infinity,
       height: 250,
       padding: const EdgeInsets.only(top: 60, left: 20, right: 20),
       decoration: const BoxDecoration(
-        color: Color(0xFF0D9488), // Solid Teal
+        color: Color(0xFFBFDBFE), // Solid Light Blue
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(40),
           bottomRight: Radius.circular(40),
@@ -304,17 +416,34 @@ class _HomePageState extends State<HomePage> {
             children: [
               // Avatar Mini
               Container(
-                width: 45, height: 45,
-                decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  shape: BoxShape.circle,
+                ),
                 child: const Icon(Icons.person, color: Colors.grey),
               ),
               const SizedBox(width: 15),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Selamat Pagi,', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(
+                    'Selamat Pagi,',
+                    style: TextStyle(
+                      color: Color(0xFF1E293B).withOpacity(0.7),
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text('Halo, Bunda $displayNama!', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Halo, Bunda $displayNama!',
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -322,9 +451,16 @@ class _HomePageState extends State<HomePage> {
           // Notifikasi Bell
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-            child: const Icon(Icons.notifications_none, color: Colors.white, size: 20),
-          )
+            decoration: BoxDecoration(
+              color: Color(0xFF1E293B).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_none,
+              color: Color(0xFF1E293B),
+              size: 20,
+            ),
+          ),
         ],
       ),
     );
@@ -333,13 +469,19 @@ class _HomePageState extends State<HomePage> {
   // --- KOMPONEN KARTU ANAK BARU MURNI DARI GAMBAR ---
   Widget _buildKartuAnakSesuaiGambar() {
     var anakAktif = _daftarAnak[_anakTerpilihIndeks];
-    
+
     String namaMurni = anakAktif['nama_anak'] ?? 'Tanpa Nama';
     String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
-    String tglPeriksaAsli = anakAktif['tgl_pemeriksaan'] != null ? 'Terakhir diperbarui: ${anakAktif['tgl_pemeriksaan']}' : 'Belum pernah dicek';
+    String tglPeriksaAsli = anakAktif['tgl_pemeriksaan'] != null
+        ? 'Terakhir diperbarui: ${anakAktif['tgl_pemeriksaan']}'
+        : 'Belum pernah dicek';
     String tinggiBadanAsli = anakAktif['tinggi_badan']?.toString() ?? '-';
     String beratBadanAsli = anakAktif['berat_badan']?.toString() ?? '-';
-    String kelamin = (anakAktif['jenis_kelamin'] == 'L' || anakAktif['jenis_kelamin'] == 'laki-laki') ? 'LAKI-LAKI' : 'PEREMPUAN';
+    String kelamin =
+        (anakAktif['jenis_kelamin'] == 'L' ||
+            anakAktif['jenis_kelamin'] == 'laki-laki')
+        ? 'LAKI-LAKI'
+        : 'PEREMPUAN';
 
     return Container(
       width: double.infinity,
@@ -348,7 +490,11 @@ class _HomePageState extends State<HomePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
@@ -359,36 +505,74 @@ class _HomePageState extends State<HomePage> {
             children: [
               Row(
                 children: [
-                  Text(namaMurni, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w800, fontSize: 16)),
+                  Text(
+                    namaMurni,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0xFFa7f3d0), borderRadius: BorderRadius.circular(10)),
-                    child: Text(kelamin, style: const TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold, fontSize: 10)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEBF5FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      kelamin,
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
                   ),
                 ],
               ),
               GestureDetector(
                 onTap: () {
                   if (_daftarAnak.length > 1) {
-                    setState(() { _anakTerpilihIndeks = (_anakTerpilihIndeks + 1) % _daftarAnak.length; });
+                    setState(() {
+                      _anakTerpilihIndeks =
+                          (_anakTerpilihIndeks + 1) % _daftarAnak.length;
+                    });
                   }
                 },
-                child: const Icon(Icons.chevron_right, color: Color(0xFF0D9488)),
-              )
+                child: const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 5),
-          Text(tglPeriksaAsli, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-          
+          Text(
+            tglPeriksaAsli,
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+          ),
+
           const SizedBox(height: 20),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildStatBox(Icons.calendar_today_outlined, 'USIA', teksUsia),
-              _buildStatBox(Icons.monitor_weight_outlined, 'BERAT', '$beratBadanAsli kg', iconColor: Colors.orange),
-              _buildStatBox(Icons.height_outlined, 'TINGGI', '$tinggiBadanAsli cm'),
+              _buildStatBox(
+                Icons.monitor_weight_outlined,
+                'BERAT',
+                '$beratBadanAsli kg',
+                iconColor: Colors.orange,
+              ),
+              _buildStatBox(
+                Icons.height_outlined,
+                'TINGGI',
+                '$tinggiBadanAsli cm',
+              ),
             ],
           ),
         ],
@@ -396,22 +580,42 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildStatBox(IconData icon, String title, String value, {Color iconColor = const Color(0xFF0D9488)}) {
+  Widget _buildStatBox(
+    IconData icon,
+    String title,
+    String value, {
+    Color iconColor = const Color(0xFF1E293B),
+  }) {
     return Container(
       width: 90,
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade100)
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         children: [
           Icon(icon, color: iconColor, size: 22),
           const SizedBox(height: 10),
-          Text(title, style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 5),
-          Text(value, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF1E293B),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -421,26 +625,63 @@ class _HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Icon(Icons.child_care, size: 40, color: Colors.grey.shade300),
           const SizedBox(height: 15),
-          const Text('Belum Ada Data Anak', style: TextStyle(color: Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Belum Ada Data Anak',
+            style: TextStyle(
+              color: Color(0xFF1E293B),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('Masukkan data anak Anda untuk memantau tumbuh kembang cerdasnya bersama Kila.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+          const Text(
+            'Masukkan data anak Anda untuk memantau tumbuh kembang cerdasnya bersama Kila.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
           const SizedBox(height: 15),
           ElevatedButton(
-            onPressed: () { 
+            onPressed: () {
               if (!_isProfilIbuLengkap) {
                 _tampilkanDialogLengkapiProfil();
               } else {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahAnakPage())).then((_) => _fetchProfilDanAnak());
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TambahAnakPage(),
+                  ),
+                ).then((_) => _fetchProfilDanAnak());
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-            child: const Text('Tambah Data Anak', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          )
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBFDBFE),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            child: const Text(
+              'Tambah Data Anak',
+              style: TextStyle(
+                color: Color(0xFF1E293B),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -451,22 +692,43 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
           contentPadding: const EdgeInsets.all(25),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(color: Colors.orange.shade50, shape: BoxShape.circle),
-                child: const Icon(Icons.person_off_outlined, color: Colors.orange, size: 50),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_off_outlined,
+                  color: Colors.orange,
+                  size: 50,
+                ),
               ),
               const SizedBox(height: 20),
-              const Text('Tunggu Sebentar, Bunda!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)), textAlign: TextAlign.center),
+              const Text(
+                'Tunggu Sebentar, Bunda!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 10),
               const Text(
                 'Untuk memastikan akurasi pantauan gizi si kecil, pastikan data diri Bunda sudah diisi dengan lengkap ya.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 14, height: 1.5),
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 25),
@@ -475,78 +737,154 @@ class _HomePageState extends State<HomePage> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilPage())).then((_) => _fetchProfilDanAnak());
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfilPage(),
+                      ),
+                    ).then((_) => _fetchProfilDanAnak());
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D9488),
+                    backgroundColor: const Color(0xFFBFDBFE),
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
-                  child: const Text('Lengkapi Profil Sekarang', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Lengkapi Profil Sekarang',
+                    style: TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Nanti Saja', style: TextStyle(color: Colors.grey)),
-              )
+                child: const Text(
+                  'Nanti Saja',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
   Widget _buildTipsCardLama(String title, String subtitle, String imgUrl) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         children: [
-          ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(imgUrl, width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(width: 60, height: 60, color: Colors.grey[300], child: const Icon(Icons.image_not_supported)))),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              imgUrl,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+              ),
+            ),
+          ),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                 const SizedBox(height: 4),
-                 Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-               ]
-            )
-          )
-        ]
-      )
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // ==== WIDGET TAB 1: RIWAYAT ====
   Widget _buildPantauTumbuhKembang() {
-    const Color primaryColor = Color(0xFF2563EB); // Biru lama
+    const Color primaryColor = Color(0xFFBFDBFE); // Blue theme color
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Riwayat Pertumbuhan Grafik', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const Text(
+              'Riwayat Pertumbuhan Grafik',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
             const SizedBox(height: 5),
-            const Text('Status grafik berat badan berdasarkan usia (WHO)', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            const Text(
+              'Status grafik berat badan berdasarkan usia (WHO)',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(height: 30),
-            
+
             Container(
               height: 250,
               padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: primaryColor.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, 5))]),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
               child: const Center(
                 child: Text(
                   'Belum ada data grafik.\nLakukan Cek Gizi untuk mulai menggambar grafik.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 30),
-            const Text('Data Historis Bulanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const Text(
+              'Data Historis Bulanan',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
             const SizedBox(height: 10),
             Expanded(
               child: ListView(
@@ -554,12 +892,18 @@ class _HomePageState extends State<HomePage> {
                   Center(
                     child: Padding(
                       padding: EdgeInsets.only(top: 20),
-                      child: Text('Riwayat kosong...', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-                    )
-                  )
+                      child: Text(
+                        'Riwayat kosong...',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -570,8 +914,16 @@ class _HomePageState extends State<HomePage> {
   Widget _buildEdukasiResep() {
     bool adaAnakBeresiko = false;
     if (_daftarAnak.isNotEmpty) {
-      String statusGiziRaw = _daftarAnak[_anakTerpilihIndeks]['status_gizi'] ?? ( (_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] != null && (_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] as num) < 65) ? 'Beresiko' : 'Baik' );
-      adaAnakBeresiko = statusGiziRaw.toLowerCase().contains('beresiko') || statusGiziRaw.toLowerCase().contains('kurang');
+      String statusGiziRaw =
+          _daftarAnak[_anakTerpilihIndeks]['status_gizi'] ??
+          ((_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] != null &&
+                  (_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] as num) <
+                      65)
+              ? 'Beresiko'
+              : 'Baik');
+      adaAnakBeresiko =
+          statusGiziRaw.toLowerCase().contains('beresiko') ||
+          statusGiziRaw.toLowerCase().contains('kurang');
     }
 
     return SafeArea(
@@ -580,11 +932,29 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Menu Nutrisi & MPASI', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const Text(
+              'Menu Nutrisi & MPASI',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
             const SizedBox(height: 5),
-            Text(adaAnakBeresiko ? 'Difilter Cerdas: Mode Kejar Tumbuh (Tinggi Protein)' : 'Rekomendasi harian kaya nutrisi', style: TextStyle(fontSize: 13, color: adaAnakBeresiko ? Colors.orange[800] : Colors.grey, fontWeight: adaAnakBeresiko ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              adaAnakBeresiko
+                  ? 'Difilter Cerdas: Mode Kejar Tumbuh (Tinggi Protein)'
+                  : 'Rekomendasi harian kaya nutrisi',
+              style: TextStyle(
+                fontSize: 13,
+                color: adaAnakBeresiko ? Colors.orange[800] : Colors.grey,
+                fontWeight: adaAnakBeresiko
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
             const SizedBox(height: 20),
-            
+
             Expanded(
               child: ListView(
                 physics: const BouncingScrollPhysics(),
@@ -593,63 +963,142 @@ class _HomePageState extends State<HomePage> {
                     Container(
                       margin: const EdgeInsets.only(bottom: 15),
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.orange.shade200)),
-                      child: const Row(children: [Icon(Icons.auto_awesome, color: Colors.orange, size: 20), SizedBox(width: 8), Expanded(child: Text('AI merekomendasikan resep di bawah ini khusus untuk mempercepat pertumbuhan.', style: TextStyle(color: Colors.orange, fontSize: 12)))]),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'AI merekomendasikan resep di bawah ini khusus untuk mempercepat pertumbuhan.',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
-                  ..._daftarResep.map((resep) => Padding(
-                        padding: const EdgeInsets.only(bottom: 15),
-                        child: _buildRecipeCardLama(resep['nama_makanan'] ?? 'Menu Bergizi', 'Bagus (AI)', 'Cek Detail', '-', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'),
-                      )).toList(),
+                  ..._daftarResep.map(
+                    (resep) => Padding(
+                      padding: const EdgeInsets.only(bottom: 15),
+                      child: _buildRecipeCardLama(
+                        resep['nama_makanan'] ?? 'Menu Bergizi',
+                        'Bagus (AI)',
+                        'Cek Detail',
+                        '-',
+                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+                      ),
+                    ),
+                  ),
                   if (_daftarResep.isEmpty)
-                    _buildRecipeCardLama('Bubur Hati Ayam Lodeh (Contoh)', 'Bagus (AI)', '150 Kkal', '20 mnt', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'),
+                    _buildRecipeCardLama(
+                      'Bubur Hati Ayam Lodeh (Contoh)',
+                      'Bagus (AI)',
+                      '150 Kkal',
+                      '20 mnt',
+                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+                    ),
                 ],
               ),
-            )
-          ]
+            ),
+          ],
         ),
-      )
+      ),
     );
   }
 
-  Widget _buildRecipeCardLama(String title, String rating, String cals, String time, String imgUrl) {
+  Widget _buildRecipeCardLama(
+    String title,
+    String rating,
+    String cals,
+    String time,
+    String imgUrl,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         children: [
-          ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(imgUrl, width: 70, height: 70, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(width: 70, height: 70, color: Colors.grey[300], child: const Icon(Icons.image_not_supported)))),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              imgUrl,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                width: 70,
+                height: 70,
+                color: Colors.grey[300],
+                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+              ),
+            ),
+          ),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                 const SizedBox(height: 4),
-                 Row(
-                   children: [
-                     const Icon(Icons.star, color: Colors.amber, size: 14),
-                     const SizedBox(width: 4),
-                     Text(rating, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                   ],
-                 ),
-                 const SizedBox(height: 8),
-                 Row(
-                   children: [
-                     const Icon(Icons.local_fire_department, color: Colors.orange, size: 14),
-                     const SizedBox(width: 4),
-                     Text(cals, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                     const SizedBox(width: 15),
-                     const Icon(Icons.timer, color: Colors.grey, size: 14),
-                     const SizedBox(width: 4),
-                     Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                   ],
-                 )
-               ]
-            )
-          )
-        ]
-      )
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      rating,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department,
+                      color: Colors.orange,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      cals,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                    const SizedBox(width: 15),
+                    const Icon(Icons.timer, color: Colors.grey, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      time,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

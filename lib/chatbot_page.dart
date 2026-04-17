@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config/api_config.dart';
 import 'chatbot_history_page.dart';
@@ -154,26 +154,26 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D9488); // Teal color
+    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue color
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Row(
           children: [
-            const CircleAvatar(radius: 16, backgroundColor: Colors.white, child: Icon(Icons.smart_toy, color: primaryColor, size: 18)),
+            const CircleAvatar(radius: 16, backgroundColor: Colors.white, child: Icon(Icons.smart_toy, color: Color(0xFF1E293B), size: 18)),
             const SizedBox(width: 10),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Kila AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('• Online', style: TextStyle(fontSize: 11, color: Colors.white70)),
+                Text('Kila AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                Text('• Online', style: TextStyle(fontSize: 11, color: Color(0xFF1E293B).withOpacity(0.7))),
               ],
             ),
           ],
         ),
         backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -253,7 +253,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-                    child: const Icon(Icons.send, color: Color(0xFFcbd5e1), size: 20),
+                    child: const Icon(Icons.send, color: Color(0xFF1E293B), size: 20),
                   ),
                 )
               ],
@@ -275,10 +275,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.3)),
+          border: Border.all(color: Color(0xFF1E293B).withOpacity(0.2)),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(text, style: const TextStyle(color: Color(0xFF0D9488), fontSize: 13, fontWeight: FontWeight.bold)),
+        child: Text(text, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -293,7 +293,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
             margin: const EdgeInsets.only(right: 8, bottom: 12),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(color: primaryColor.withOpacity(0.2), shape: BoxShape.circle),
-            child: Icon(Icons.smart_toy, color: primaryColor, size: 16),
+            child: const Icon(Icons.smart_toy, color: Color(0xFF1E293B), size: 16),
           ),
         
         Container(
@@ -312,7 +312,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
           ),
           padding: const EdgeInsets.all(15),
           child: isUser 
-            ? Text(isian, style: const TextStyle(color: Colors.white, fontSize: 14))
+            ? Text(isian, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14))
             : MarkdownBody(
                 data: isian,
                 styleSheet: MarkdownStyleSheet(

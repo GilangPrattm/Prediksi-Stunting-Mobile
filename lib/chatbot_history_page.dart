@@ -69,14 +69,21 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D9488); // Teal color
+    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue color
 
     return Scaffold(
       backgroundColor: Colors.white, // White background matching design
       appBar: AppBar(
-        title: const Text('Riwayat Percakapan', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Riwayat Percakapan',
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep),
@@ -86,25 +93,38 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Hapus Semua Riwayat?'),
-                  content: const Text('Seluruh sesi obrolan Anda dengan Kila akan dihapus permanen dari memori HP.'),
+                  content: const Text(
+                    'Seluruh sesi obrolan Anda dengan Kila akan dihapus permanen dari memori HP.',
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Batal'),
+                    ),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                         _clearHistory();
                       },
-                      child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
               );
             },
-          )
+          ),
         ],
       ),
       body: _historyList.isEmpty
-          ? const Center(child: Text('Belum ada riwayat obrolan.', style: TextStyle(color: Colors.grey)))
+          ? const Center(
+              child: Text(
+                'Belum ada riwayat obrolan.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
           : Column(
               children: [
                 Expanded(
@@ -114,18 +134,21 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                     itemBuilder: (context, index) {
                       var session = _historyList[index];
                       List msgs = session['messages'] ?? [];
-                      
+
                       // Cari pesan pembuka atau terakhir pengguna
                       String firstMessage = 'Tidak ada pesan';
                       if (msgs.isNotEmpty) {
-                          // Karena array disortir terbalik (reverse), pesan terbaru ada di index 0
-                          // Namun untuk preview judul yang masuk akal, kita ambil pesan awal dari sesi (yang terakhir di array reverse)
-                          var userMsgs = msgs.where((m) => m['sender'] == 'user').toList();
-                          if (userMsgs.isNotEmpty) {
-                              firstMessage = userMsgs.last['text']; // Last in reversed list = First actual message
-                          } else {
-                              firstMessage = msgs.first['text'];
-                          }
+                        // Karena array disortir terbalik (reverse), pesan terbaru ada di index 0
+                        // Namun untuk preview judul yang masuk akal, kita ambil pesan awal dari sesi (yang terakhir di array reverse)
+                        var userMsgs = msgs
+                            .where((m) => m['sender'] == 'user')
+                            .toList();
+                        if (userMsgs.isNotEmpty) {
+                          firstMessage = userMsgs
+                              .last['text']; // Last in reversed list = First actual message
+                        } else {
+                          firstMessage = msgs.first['text'];
+                        }
                       }
 
                       return Dismissible(
@@ -220,12 +243,17 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 30),
-                  child: Text('Riwayat percakapan disimpan selama 30 hari terakhir', style: TextStyle(fontSize: 11, color: Colors.indigo.shade200)),
-                )
+                  child: Text(
+                    'Riwayat percakapan disimpan selama 30 hari terakhir',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.indigo.shade200,
+                    ),
+                  ),
+                ),
               ],
             ),
     );
   }
-
 
 }
