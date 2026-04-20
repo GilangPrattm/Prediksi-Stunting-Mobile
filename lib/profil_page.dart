@@ -18,6 +18,8 @@ class _ProfilPageState extends State<ProfilPage> {
   String _nama = 'Pengguna';
   String _inisial = 'P';
   String _email = 'Memuat...';
+  String _telepon = '-';
+  String _namaAnak = '-';
   bool _isLoading = true;
 
   @override
@@ -31,15 +33,21 @@ class _ProfilPageState extends State<ProfilPage> {
     String? token = prefs.getString('token');
 
     try {
-      final response = await http.get(
+      final responseAkun = await http.get(
         Uri.parse('$_baseUrl/profil'),
         headers: {'Authorization': 'Bearer $token'},
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['data'];
+      final responseIbu = await http.get(
+        Uri.parse('$_baseUrl/profil-ibu'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (responseAkun.statusCode == 200) {
+        final data = jsonDecode(responseAkun.body)['data'];
         setState(() {
           _nama = data['name'] ?? 'Pengguna';
           _email = data['email'] ?? '';
+          _telepon = data['telepon'] ?? '-';
           if (_nama.isNotEmpty) {
             var splitted = _nama.split(' ');
             _inisial = splitted.length > 1
@@ -47,6 +55,25 @@ class _ProfilPageState extends State<ProfilPage> {
                 : _nama[0].toUpperCase();
           }
         });
+      }
+
+      if (responseIbu.statusCode == 200) {
+        final dataList = jsonDecode(responseIbu.body);
+        if (dataList is List && dataList.isNotEmpty) {
+          final firstProfil = dataList[0];
+          final listAnak = firstProfil['anak'];
+          if (listAnak != null && listAnak is List && listAnak.isNotEmpty) {
+            List<String> names = [];
+            for (var a in listAnak) {
+              if (a['nama_anak'] != null) names.add(a['nama_anak']);
+            }
+            if (names.isNotEmpty) {
+              setState(() {
+                _namaAnak = names.join(', ');
+              });
+            }
+          }
+        }
       }
     } catch (e) {
       // Ignored for UI
@@ -329,9 +356,9 @@ class _ProfilPageState extends State<ProfilPage> {
                                 ),
                               ),
                               const SizedBox(height: 5),
-                              const Text(
-                                'Ibu dari -',
-                                style: TextStyle(
+                              Text(
+                                'Ibu dari $_namaAnak',
+                                style: const TextStyle(
                                   color: Color(0xFF64748B),
                                   fontSize: 14,
                                 ),
@@ -363,10 +390,10 @@ class _ProfilPageState extends State<ProfilPage> {
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
-                                      '-',
-                                      style: TextStyle(
+                                      _telepon.isNotEmpty ? _telepon : '-',
+                                      style: const TextStyle(
                                         color: Color(0xFF475569),
                                         fontSize: 13,
                                       ),
