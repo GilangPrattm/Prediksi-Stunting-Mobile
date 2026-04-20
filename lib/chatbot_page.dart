@@ -7,7 +7,10 @@ import 'config/api_config.dart';
 import 'chatbot_history_page.dart';
 
 class ChatbotPage extends StatefulWidget {
-  const ChatbotPage({super.key});
+  final String? sessionId;
+  final List<Map<String, String>>? initialMessages;
+
+  const ChatbotPage({super.key, this.sessionId, this.initialMessages});
 
   @override
   State<ChatbotPage> createState() => _ChatbotPageState();
@@ -19,17 +22,47 @@ class _ChatbotPageState extends State<ChatbotPage> {
   final List<Map<String, dynamic>> _historyGemini = [];
   bool _isLoading = false;
 
-  final String _sessionId = DateTime.now().toIso8601String(); // Tag id percakapan unik ini
+  late final String _sessionId;
 
   @override
   void initState() {
     super.initState();
-    // Otak sistem sekarang semuanya tersimpan rapat dengan aman di Server Laravel!
-    _messagesUI.add({
-      'sender': 'ai',
-      'text': 'Halo Bunda! Mesin Kila sekarang makin canggih dan ramah. Mari berdiskusi!'
-    });
-    _saveToLocalStorage(); // Simpan pesan pertama ke memori HP
+    _sessionId = widget.sessionId ?? DateTime.now().toIso8601String();
+
+    if (widget.initialMessages != null && widget.initialMessages!.isNotEmpty) {
+      // Melanjutkan sesi lama: muat ulang pesan & bangun ulang konteks Gemini
+      _messagesUI.addAll(widget.initialMessages!);
+      _rebuildGeminiHistory();
+    } else {
+      // Sesi baru
+      _messagesUI.add({
+        'sender': 'ai',
+        'text': 'Halo Bunda! Mesin Kila sekarang makin canggih dan ramah. Mari berdiskusi!'
+      });
+      _saveToLocalStorage();
+    }
+  }
+
+  /// Membangun ulang konteks history Gemini dari pesan-pesan yang sudah ada
+  /// agar AI tetap ingat percakapan sebelumnya saat melanjutkan sesi.
+  void _rebuildGeminiHistory() {
+    _historyGemini.clear();
+    // _messagesUI disimpan dalam urutan terbalik (index 0 = terbaru),
+    // jadi kita iterasi dari belakang ke depan untuk urutan kronologis.
+    for (int i = _messagesUI.length - 1; i >= 0; i--) {
+      final msg = _messagesUI[i];
+      if (msg['sender'] == 'user') {
+        _historyGemini.add({
+          'role': 'user',
+          'parts': [{'text': msg['text']}]
+        });
+      } else if (msg['sender'] == 'ai') {
+        _historyGemini.add({
+          'role': 'model',
+          'parts': [{'text': msg['text']}]
+        });
+      }
+    }
   }
 
   void _saveToLocalStorage() async {
@@ -200,7 +233,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
             child: Row(
               children: [
-                const Icon(Icons.mood, color: Colors.grey),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(

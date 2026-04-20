@@ -55,6 +55,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         setState(() {
           _nameController.text = dataAkun['name'] ?? '';
           _emailController.text = dataAkun['email'] ?? '';
+          _teleponController.text = dataAkun['telepon'] ?? '';
         });
       }
 
@@ -64,7 +65,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
           int usia = dataIbu['usia_ibu'] ?? 0;
           if (usia > 0) {
             int birthYear = DateTime.now().year - usia;
-            _tglLahirController.text = "$birthYear-01-01"; // Estimasi Tgl Lahir
+            _tglLahirController.text = "01/01/$birthYear"; // Format dd/MM/yyyy
           }
           _tinggiController.text = dataIbu['tinggi_ibu']?.toString() ?? '';
           _pendidikanPilih = dataIbu['pendidikan_ibu'];
@@ -101,7 +102,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
     if (pickedDate != null) {
       setState(() {
         _tglLahirController.text =
-            "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+            "${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.year}";
       });
     }
   }
@@ -114,20 +115,23 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
     int calculatedUsia = 0;
     if (_tglLahirController.text.isNotEmpty) {
-      DateTime dob = DateTime.parse(_tglLahirController.text);
-      DateTime now = DateTime.now();
-      calculatedUsia = now.year - dob.year;
-      if (now.month < dob.month ||
-          (now.month == dob.month && now.day < dob.day)) {
-        calculatedUsia--;
+      List<String> parts = _tglLahirController.text.split('/');
+      if (parts.length == 3) {
+        DateTime dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        DateTime now = DateTime.now();
+        calculatedUsia = now.year - dob.year;
+        if (now.month < dob.month ||
+            (now.month == dob.month && now.day < dob.day)) {
+          calculatedUsia--;
+        }
       }
     }
 
     try {
       Map<String, dynamic> payloadAkun = {
         'name': _nameController.text,
-        'email': _emailController
-            .text, // Email biasanya dikunci dari Backend juga, tapi kita sertakan
+        'email': _emailController.text,
+        'telepon': _teleponController.text,
       };
 
       await http.put(
