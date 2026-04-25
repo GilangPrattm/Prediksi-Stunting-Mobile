@@ -60,17 +60,21 @@ class _EditProfilPageState extends State<EditProfilPage> {
       }
 
       if (responseIbu.statusCode == 200) {
-        final dataIbu = jsonDecode(responseIbu.body)['data'];
-        setState(() {
-          int usia = dataIbu['usia_ibu'] ?? 0;
-          if (usia > 0) {
-            int birthYear = DateTime.now().year - usia;
-            _tglLahirController.text = "01/01/$birthYear"; // Format dd/MM/yyyy
-          }
-          _tinggiController.text = dataIbu['tinggi_ibu']?.toString() ?? '';
-          _pendidikanPilih = dataIbu['pendidikan_ibu'];
-          _pekerjaanPilih = dataIbu['pekerjaan_ibu'];
-        });
+        // Backend mengembalikan array langsung, bukan {data:[...]}
+        final dataIbu = jsonDecode(responseIbu.body);
+        if (dataIbu is List && dataIbu.isNotEmpty) {
+          final firstIbu = dataIbu[0];
+          setState(() {
+            int usia = firstIbu['usia_ibu'] ?? 0;
+            if (usia > 0) {
+              int birthYear = DateTime.now().year - usia;
+              _tglLahirController.text = "01/01/$birthYear";
+            }
+            _tinggiController.text = firstIbu['tinggi_ibu']?.toString() ?? '';
+            _pendidikanPilih = firstIbu['pendidikan_ibu'];
+            _pekerjaanPilih = firstIbu['pekerjaan_ibu'];
+          });
+        }
       }
 
       setState(() => _isLoading = false);

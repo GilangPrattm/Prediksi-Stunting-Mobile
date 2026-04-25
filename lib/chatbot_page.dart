@@ -47,22 +47,38 @@ class _ChatbotPageState extends State<ChatbotPage> {
   /// agar AI tetap ingat percakapan sebelumnya saat melanjutkan sesi.
   void _rebuildGeminiHistory() {
     _historyGemini.clear();
-    // _messagesUI disimpan dalam urutan terbalik (index 0 = terbaru),
-    // jadi kita iterasi dari belakang ke depan untuk urutan kronologis.
+    List<Map<String, dynamic>> tempHistory = [];
+    String expectRole = 'user';
+    
     for (int i = _messagesUI.length - 1; i >= 0; i--) {
       final msg = _messagesUI[i];
-      if (msg['sender'] == 'user') {
-        _historyGemini.add({
+      if (msg['sender'] == 'user' && expectRole == 'user') {
+        tempHistory.add({
           'role': 'user',
           'parts': [{'text': msg['text']}]
         });
-      } else if (msg['sender'] == 'ai') {
-        _historyGemini.add({
+        expectRole = 'model';
+      } else if (msg['sender'] == 'ai' && expectRole == 'model') {
+        tempHistory.add({
           'role': 'model',
           'parts': [{'text': msg['text']}]
         });
+        expectRole = 'user';
+      } else if (msg['sender'] == 'error') {
+        // Jika ada error/gagal, hapus pertanyaan user dari buffer (batal sinkronisasi)
+        if (expectRole == 'model' && tempHistory.isNotEmpty) {
+           tempHistory.removeLast(); 
+           expectRole = 'user';
+        }
       }
     }
+    
+    // Hapus pesan user di buffer jika jadi gantung (tanpa balasan sukses)
+    if (expectRole == 'model' && tempHistory.isNotEmpty) {
+      tempHistory.removeLast();
+    }
+    
+    _historyGemini.addAll(tempHistory);
   }
 
   void _saveToLocalStorage() async {
@@ -114,12 +130,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
         }),
       );
 
-      // Simpan histori chat milik User untuk siklus berikutnya
-      _historyGemini.add({
-        'role': 'user', 
-        'parts': [{'text': userText}]
-      });
-
       if (response.statusCode == 200) {
         final dataJson = jsonDecode(response.body);
         String balas = dataJson['reply'] ?? 'Terjadi kebisuan Server AI';
@@ -128,6 +138,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
           _messagesUI.insert(0, {'sender': 'ai', 'text': balas});
         });
         
+        // Hanya simpan sinkronisasi sinkron jika sukses (menghindari error history gantung)
+        _historyGemini.add({
+          'role': 'user', 
+          'parts': [{'text': userText}]
+        });
+
         // Simpan balik memori dari jawaban AI
         _historyGemini.add({
           'role': 'model', 
@@ -138,13 +154,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
       } else {
         setState(() {
-          _messagesUI.insert(0, {'sender': 'ai', 'text': 'Waduh, Server Backend menolak pesan. Detail: ${response.statusCode}'});
+          _messagesUI.insert(0, {'sender': 'error', 'text': 'Waduh, Server Backend menolak pesan. Detail: ${response.statusCode}'});
         });
+        _saveToLocalStorage();
       }
     } catch (e) {
       setState(() {
-        _messagesUI.insert(0, {'sender': 'ai', 'text': 'Koneksi ke server pusat Laravel terputus. Nyalakan server lalu coba lagi.'});
+        _messagesUI.insert(0, {'sender': 'error', 'text': 'Koneksi ke server pusat Laravel terputus. Nyalakan server lalu coba lagi.'});
       });
+      _saveToLocalStorage();
     } finally {
       setState(() {
         _isLoading = false;
