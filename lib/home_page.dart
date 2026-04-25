@@ -8,6 +8,7 @@ import 'profil_page.dart';
 import 'edit_profil_page.dart';
 import 'config/api_config.dart';
 import 'cek_gizi_bottom_sheet.dart';
+import 'cek_stunting_page.dart';
 import 'chatbot_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,6 +28,8 @@ class _HomePageState extends State<HomePage> {
   String _namaBunda = '';
   List<dynamic> _daftarResep = [];
   bool _isProfilIbuLengkap = true;
+  List<dynamic> _daftarHistoriPrediksi = [];
+  bool _isLoadingHistori = true;
 
   @override
   void initState() {
@@ -85,9 +88,29 @@ class _HomePageState extends State<HomePage> {
           _daftarResep = jsonDecode(resMakanan.body)['data'];
         });
       }
+
+      // Ambil histori prediksi dari server
+      final resHistori = await http.get(
+        Uri.parse('$_baseUrl/prediksi'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resHistori.statusCode == 200) {
+        final dataHistori = jsonDecode(resHistori.body);
+        setState(() {
+          _daftarHistoriPrediksi = (dataHistori['data'] as List)
+              .reversed
+              .toList(); // Terbaru di atas
+          _isLoadingHistori = false;
+        });
+      } else {
+        setState(() => _isLoadingHistori = false);
+      }
     } catch (e) {
       print("Error Fetching API: $e");
-      setState(() => _isLoadingAnak = false);
+      setState(() {
+        _isLoadingAnak = false;
+        _isLoadingHistori = false;
+      });
     }
   }
 
@@ -133,13 +156,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // List layar dengan 5 elemen. Index 1 (Cek Stunting) tidak akan pernah me-render layar karena di-intercept.
+    // List layar dengan 5 elemen.
+    // Index 1 (Cek Stunting) di-intercept → tidak render halaman, hanya buka bottom sheet.
+    // Riwayat Prediksi diakses via ikon di header beranda.
     final List<Widget> pages = [
       _buildBeranda(),
-      const SizedBox.shrink(), // Dummy index 1 (Cek Stunting)
-      _buildEdukasiResep(),
-      const ChatbotPage(), // Kila AI
-      const ProfilPage(), // Akun Saya
+      _buildPantauTumbuhKembang(), // Index 1: Riwayat Prediksi
+      const SizedBox(), // Index 2: Prediksi (Di-intercept)
+      _buildEdukasiResep(), // Index 3: MPASI
+      const ProfilPage(), // Index 4: Akun Saya
     ];
 
     const Color primaryColor = Color(0xFFBFDBFE);
@@ -148,6 +173,16 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: const Color(0xFFF8FAFC),
       body: pages[_selectedIndex],
 
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ChatbotPage()),
+          );
+        },
+        backgroundColor: const Color(0xFFBFDBFE),
+        child: const Icon(Icons.smart_toy, color: Color(0xFF1E293B)),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
@@ -164,26 +199,15 @@ class _HomePageState extends State<HomePage> {
         elevation: 20,
         backgroundColor: Colors.white,
         onTap: (index) {
-          if (index == 1) {
-            // CEK STUNTING DI-INTERCEPT
-            if (_daftarAnak.isNotEmpty) {
-              var anakAktif = _daftarAnak[_anakTerpilihIndeks];
-              int umurBulanAsli = _dapatkanUmurBulan(anakAktif['tgl_lahir']);
-              tampilDialogCekGizi(
-                context,
-                anakAktif,
-                umurBulanAsli,
-                _fetchProfilDanAnak,
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tambahkan data anak terlebih dahulu!'),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CekStuntingPage(
+                  isIbuDataComplete: _isProfilIbuLengkap,
                 ),
-              );
-            }
+              ),
+            );
           } else {
             setState(() {
               _selectedIndex = index;
@@ -197,19 +221,19 @@ class _HomePageState extends State<HomePage> {
             label: 'Beranda',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_turned_in_outlined),
-            activeIcon: Icon(Icons.assignment_turned_in),
-            label: 'Cek Stunting',
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'Riwayat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
+            label: 'Prediksi',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu_outlined),
             activeIcon: Icon(Icons.restaurant_menu),
             label: 'MPASI',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.smart_toy_outlined),
-            activeIcon: Icon(Icons.smart_toy),
-            label: 'Kila AI',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -225,47 +249,47 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBeranda() {
     bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty;
 
-    return Stack(
-      children: [
-        RefreshIndicator(
-          onRefresh: _fetchProfilDanAnak,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // HEADER TEAL & KARTU ANAK MENGAMBANG
-                Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.topCenter,
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: _fetchProfilDanAnak,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // HEADER TEAL + KARTU ANAK (layout tanpa Stack overflow)
+              Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.topCenter,
+                children: [
+                  // Header background
+                  _buildHeaderSesuaiGambar(),
+
+                  // Kartu anak mengambang di bawah header
+                  Positioned(
+                    top: 110,
+                    left: 20,
+                    right: 20,
+                    child: _isLoadingAnak
+                        ? const SizedBox(
+                            height: 120,
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : (hasData
+                              ? _buildKartuAnakSesuaiGambar()
+                              : _buildKartuAnakKosong()),
+                  ),
+                ],
+              ),
+
+              // Spacer agar konten di bawah tidak bertabrakan dengan kartu yang mengambang
+              const SizedBox(height: 160),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
                   children: [
-                    // ===== HEADER TEAL EDGE-TO-EDGE =====
-                    _buildHeaderSesuaiGambar(),
-
-                    // ===== KARTU ANAK MENGAMBANG =====
-                    Container(
-                      margin: const EdgeInsets.only(
-                        top: 130,
-                        left: 20,
-                        right: 20,
-                      ),
-                      child: _isLoadingAnak
-                          ? const Center(child: CircularProgressIndicator())
-                          : (hasData
-                                ? _buildKartuAnakSesuaiGambar()
-                                : _buildKartuAnakKosong()),
-                    ),
-                  ],
-                ),
-
-                // Margin dinamis untuk mengimbangi overlap kartu anak
-                const SizedBox(height: 100),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Column(
-                    children: [
-                      // Banner Waktunya Cek Gizi!
+                    // Banner Waktunya Cek Gizi!
                       if (hasData)
                         Container(
                           width: double.infinity,
@@ -304,16 +328,13 @@ class _HomePageState extends State<HomePage> {
                               const SizedBox(height: 15),
                               ElevatedButton(
                                 onPressed: () {
-                                  var anakAktif =
-                                      _daftarAnak[_anakTerpilihIndeks];
-                                  int umurBulanAsli = _dapatkanUmurBulan(
-                                    anakAktif['tgl_lahir'],
-                                  );
-                                  tampilDialogCekGizi(
+                                  Navigator.push(
                                     context,
-                                    anakAktif,
-                                    umurBulanAsli,
-                                    _fetchProfilDanAnak,
+                                    MaterialPageRoute(
+                                      builder: (context) => CekStuntingPage(
+                                        isIbuDataComplete: _isProfilIbuLengkap,
+                                      ),
+                                    ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -388,8 +409,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-      ],
-    );
+      );
   }
 
   // --- KOMPONEN HEADER BARU ---
@@ -398,8 +418,8 @@ class _HomePageState extends State<HomePage> {
 
     return Container(
       width: double.infinity,
-      height: 250,
-      padding: const EdgeInsets.only(top: 60, left: 20, right: 20),
+      height: 210,
+      padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
       decoration: const BoxDecoration(
         color: Color(0xFFBFDBFE), // Solid Light Blue
         borderRadius: BorderRadius.only(
@@ -411,43 +431,49 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Avatar Mini
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  shape: BoxShape.circle,
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar Mini
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person, color: Colors.grey),
                 ),
-                child: const Icon(Icons.person, color: Colors.grey),
-              ),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selamat Pagi,',
-                    style: TextStyle(
-                      color: Color(0xFF1E293B).withOpacity(0.7),
-                      fontSize: 13,
-                    ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Selamat Pagi,',
+                        style: TextStyle(
+                          color: Color(0xFF1E293B).withOpacity(0.7),
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Halo, Bunda $displayNama!',
+                        style: const TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Halo, Bunda $displayNama!',
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 10),
           // Notifikasi Bell
           Container(
             padding: const EdgeInsets.all(8),
@@ -477,11 +503,16 @@ class _HomePageState extends State<HomePage> {
         : 'Belum pernah dicek';
     String tinggiBadanAsli = anakAktif['tinggi_badan']?.toString() ?? '-';
     String beratBadanAsli = anakAktif['berat_badan']?.toString() ?? '-';
-    String kelamin =
-        (anakAktif['jenis_kelamin'] == 'L' ||
-            anakAktif['jenis_kelamin'] == 'laki-laki')
-        ? 'LAKI-LAKI'
-        : 'PEREMPUAN';
+    // Case-insensitive check untuk semua variasi penulisan jenis kelamin
+    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '').toString().toLowerCase();
+    final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
+    String kelamin = isLakiLaki ? 'LAKI-LAKI' : 'PEREMPUAN';
+    Color warnaBadgeKelamin = isLakiLaki
+        ? const Color(0xFFDBEAFE) // Biru muda untuk laki-laki
+        : const Color(0xFFFCE7F3); // Pink muda untuk perempuan
+    Color warnaTeksBadge = isLakiLaki
+        ? const Color(0xFF1D4ED8)
+        : const Color(0xFF9D174D);
 
     return Container(
       width: double.infinity,
@@ -503,51 +534,76 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    namaMurni,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEBF5FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      kelamin,
-                      style: const TextStyle(
-                        color: Color(0xFF1E293B),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+              // Nama + Badge Kelamin
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        namaMurni,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: warnaBadgeKelamin,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        kelamin,
+                        style: TextStyle(
+                          color: warnaTeksBadge,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              GestureDetector(
-                onTap: () {
-                  if (_daftarAnak.length > 1) {
+
+              // Navigasi Anak: hanya tampil jika ada lebih dari 1 anak
+              if (_daftarAnak.length > 1)
+                GestureDetector(
+                  onTap: () {
                     setState(() {
                       _anakTerpilihIndeks =
                           (_anakTerpilihIndeks + 1) % _daftarAnak.length;
                     });
-                  }
-                },
-                child: const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFF1E293B),
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFBFDBFE),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_anakTerpilihIndeks + 1}/${_daftarAnak.length}',
+                          style: const TextStyle(
+                            color: Color(0xFF1E293B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.chevron_right, color: Color(0xFF1E293B), size: 16),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 5),
@@ -826,86 +882,167 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ==== WIDGET TAB 1: RIWAYAT ====
+  // ==== WIDGET TAB 1: RIWAYAT PREDIKSI ====
   Widget _buildPantauTumbuhKembang() {
-    const Color primaryColor = Color(0xFFBFDBFE); // Blue theme color
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Riwayat Pertumbuhan Grafik',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBFDBFE),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
             ),
-            const SizedBox(height: 5),
-            const Text(
-              'Status grafik berat badan berdasarkan usia (WHO)',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
-
-            Container(
-              height: 250,
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  'Belum ada data grafik.\nLakukan Cek Gizi untuk mulai menggambar grafik.',
-                  textAlign: TextAlign.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Riwayat Prediksi',
                   style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  'Analisis stunting oleh Kila AI',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: const Color(0xFF1E293B).withOpacity(0.7),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 30),
-            const Text(
-              'Data Historis Bulanan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView(
-                children: const [
-                  Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: Text(
-                        'Riwayat kosong...',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic,
+          ),
+
+          // Isi Riwayat
+          Expanded(
+            child: _isLoadingHistori
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFBFDBFE)))
+                : _daftarHistoriPrediksi.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.history_toggle_off, size: 60, color: Colors.grey.shade300),
+                            const SizedBox(height: 15),
+                            const Text(
+                              'Belum Ada Riwayat Prediksi',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Lakukan Cek Stunting terlebih dahulu\nuntuk melihat hasil analisis AI di sini.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _fetchProfilDanAnak,
+                        color: const Color(0xFFBFDBFE),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _daftarHistoriPrediksi.length,
+                          itemBuilder: (context, index) {
+                            return _buildKartuHistori(_daftarHistoriPrediksi[index]);
+                          },
                         ),
                       ),
-                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKartuHistori(Map<String, dynamic> item) {
+    final String hasil = item['hasil_prediksi'] ?? 'Tidak diketahui';
+    final String namaAnak = item['anak'] is Map
+        ? (item['anak']['nama_anak'] ?? '-')
+        : '-';
+    final String tanggal = item['tanggal_prediksi'] ?? item['created_at'] ?? '-';
+
+    Color warnaBg;
+    Color warnaText;
+    IconData ikon;
+
+    String hasilLower = hasil.toLowerCase();
+    if (hasilLower.contains('normal')) {
+      warnaBg = const Color(0xFFDCFAE6);
+      warnaText = const Color(0xFF166534);
+      ikon = Icons.check_circle_rounded;
+    } else if (hasilLower.contains('resiko') || hasilLower.contains('risiko') || hasilLower.contains('berisiko')) {
+      warnaBg = const Color(0xFFFFF7CD);
+      warnaText = const Color(0xFF92400E);
+      ikon = Icons.warning_amber_rounded;
+    } else {
+      warnaBg = const Color(0xFFFFE4E4);
+      warnaText = const Color(0xFF991B1B);
+      ikon = Icons.dangerous_rounded;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: warnaBg, shape: BoxShape.circle),
+            child: Icon(ikon, color: warnaText, size: 24),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  namaAnak,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Color(0xFF1E293B),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tanggal.toString().split('T').first,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: warnaBg,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              hasil,
+              style: TextStyle(color: warnaText, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }

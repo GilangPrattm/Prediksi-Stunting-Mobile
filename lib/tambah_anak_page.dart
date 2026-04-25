@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/anak_service.dart';
+import 'config/api_config.dart';
 
 class TambahAnakPage extends StatefulWidget {
   const TambahAnakPage({super.key});
@@ -13,7 +17,7 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
   final TextEditingController _nikController = TextEditingController();
   final TextEditingController _namaAnakController = TextEditingController();
   final TextEditingController _namaOrtuController = TextEditingController(
-    text: 'Terisi otomatis',
+    text: 'Memuat...', // Akan diisi otomatis dari profil
   );
   final TextEditingController _tglLahirController = TextEditingController();
   final TextEditingController _tglPemeriksaanController =
@@ -23,8 +27,39 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
   final TextEditingController _bbSekarangController = TextEditingController();
   final TextEditingController _tbSekarangController = TextEditingController();
 
-  String? _jenisKelamin; // Untuk dropdown Laki-laki / Perempuan
-  bool _isLoading = false; // Variabel penanda efek loading
+  String? _jenisKelamin;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNamaIbu(); // Ambil nama otomatis dari profil
+  }
+
+  // Ambil nama user dari /api/profil untuk isi nama_ortu otomatis
+  Future<void> _fetchNamaIbu() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    if (token == null) return;
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/profil'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        final namaIbu = data['name'] ?? '';
+        if (mounted) {
+          setState(() {
+            _namaOrtuController.text = namaIbu;
+          });
+        }
+      }
+    } catch (e) {
+      // Biarkan kosong jika gagal
+      if (mounted) setState(() => _namaOrtuController.text = '');
+    }
+  }
 
   // Fungsi Bantuan Untuk Memilih Tanggal Pakai Google Kalender Popup
   Future<void> _pilihTanggal(
@@ -81,7 +116,7 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
     Map<String, dynamic> dataKirim = {
       'nik': _nikController.text,
       'nama_anak': _namaAnakController.text,
-      'nama_ortu': _namaOrtuController.text == 'Terisi otomatis'
+      'nama_ortu': _namaOrtuController.text.trim().isEmpty
           ? ''
           : _namaOrtuController.text,
       'jenis_kelamin': _jenisKelamin,

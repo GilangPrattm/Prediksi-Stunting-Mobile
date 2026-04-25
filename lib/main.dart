@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 // Import semua halaman dan service
+import 'welcome_page.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'services/auth_service.dart'; // Jangan lupa import kurirnya!
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,18 +16,26 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future<Map<String, dynamic>> _checkInitialState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+    String? token = prefs.getString('token');
+    return {
+      'has_seen_onboarding': hasSeenOnboarding,
+      'token': token,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Stunt-Check',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primaryColor: const Color(0xFF2563EB)),
+      theme: AppTheme.lightTheme,
 
-      // Kita pakai FutureBuilder buat ngecek token pas aplikasi pertama kali dibuka
-      home: FutureBuilder<String?>(
-        future: AuthService().getToken(), // Minta tolong kurir ngecek brankas
+      home: FutureBuilder<Map<String, dynamic>>(
+        future: _checkInitialState(), 
         builder: (context, snapshot) {
-          // 1. Kalau masih ngecek (loading), tampilin muter-muter bentar
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               backgroundColor: Colors.white,
@@ -33,12 +45,19 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // 2. Kalau di brankas ternyata ADA tokennya, langsung masuk ke Beranda!
-          if (snapshot.hasData && snapshot.data != null) {
-            return const HomePage();
+          if (snapshot.hasData) {
+            bool hasSeenOnboarding = snapshot.data!['has_seen_onboarding'];
+            String? token = snapshot.data!['token'];
+
+            if (!hasSeenOnboarding) {
+              return const WelcomePage();
+            }
+
+            if (token != null) {
+              return const HomePage();
+            }
           }
 
-          // 3. Kalau brankasnya kosong (belum login / habis logout), suruh Login dulu.
           return const LoginPage();
         },
       ),

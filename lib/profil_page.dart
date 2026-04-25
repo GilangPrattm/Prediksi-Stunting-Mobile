@@ -97,7 +97,27 @@ class _ProfilPageState extends State<ProfilPage> {
           ),
           TextButton(
             onPressed: () async {
+              Navigator.pop(context); // Tutup dialog dulu
               SharedPreferences prefs = await SharedPreferences.getInstance();
+              String? token = prefs.getString('token');
+
+              // Cabut token di server terlebih dahulu
+              if (token != null) {
+                try {
+                  await http.post(
+                    Uri.parse('$_baseUrl/logout'),
+                    headers: {
+                      'Authorization': 'Bearer $token',
+                      'Content-Type': 'application/json',
+                    },
+                  );
+                } catch (e) {
+                  // Jika server tidak bisa dihubungi, tetap lanjutkan logout lokal
+                  debugPrint('Logout API error (ignored): $e');
+                }
+              }
+
+              // Baru hapus semua data lokal
               await prefs.clear();
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(

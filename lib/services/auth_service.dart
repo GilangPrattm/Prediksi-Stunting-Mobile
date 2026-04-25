@@ -8,13 +8,13 @@ class AuthService {
   final String baseUrl = ApiConfig.baseUrl; // IP Pusat
 
   // 1. Fungsi Login
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String identifier, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'email': email,
+          'identifier': identifier,
           'password': password,
         }),
       );
@@ -41,15 +41,17 @@ class AuthService {
   }
 
   // 2. Fungsi Register (Nama Anak Dihapus)
-  Future<Map<String, dynamic>> register(String namaBunda, String email, String password) async {
+  Future<Map<String, dynamic>> register(String namaBunda, String noHp, String email, String password, String passwordConfirmation) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': namaBunda, 
+          'no_hp': noHp,
           'email': email,
           'password': password,
+          'password_confirmation': passwordConfirmation,
         }),
       );
 
