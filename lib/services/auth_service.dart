@@ -88,9 +88,28 @@ class AuthService {
     return prefs.getString('token');
   }
 
-  // 4. Fungsi Logout (Buang token dari brankas)
+  // 4. Fungsi Logout (Cabut token dari server DAN hapus dari HP)
   Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    try {
+      // Ambil token sebelum dihapus
+      final token = await getToken();
+      if (token != null) {
+        // Cabut token dari server Laravel (Sanctum token revocation)
+        await http.post(
+          Uri.parse('$baseUrl/logout'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ).timeout(const Duration(seconds: 10));
+      }
+    } catch (e) {
+      // Lanjut logout lokal meskipun server tidak bisa dijangkau
+      print('Logout server error (diabaikan): $e');
+    } finally {
+      // Selalu hapus token dari HP, apapun yang terjadi
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
+    }
   }
 }

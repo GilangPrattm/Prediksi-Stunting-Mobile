@@ -47,7 +47,7 @@ class _ProfilPageState extends State<ProfilPage> {
         setState(() {
           _nama = data['name'] ?? 'Pengguna';
           _email = data['email'] ?? '';
-          _telepon = data['telepon'] ?? '-';
+          _telepon = data['no_hp'] ?? '-';
           if (_nama.isNotEmpty) {
             var splitted = _nama.split(' ');
             _inisial = splitted.length > 1
