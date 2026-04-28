@@ -253,13 +253,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
 
       final idAnak = _selectedAnak['_id'] ?? _selectedAnak['id'];
       if (idAnak == null || idAnak.toString().isEmpty) {
-        print('DEBUG: _selectedAnak = $_selectedAnak');
         throw Exception(
           "ID anak tidak valid. Coba refresh dan pilih anak lagi.",
         );
       }
-
-      print('DEBUG: Mengirim prediksi dengan ID anak: $idAnak');
 
       final requestBody = {
         'id_anak': idAnak,
@@ -269,7 +266,6 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
             double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
         'umur_bulan': _totalBulanAnak,
       };
-      print('DEBUG: Request body = $requestBody');
 
       final responsePrediksi = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/prediksi/hitung'),
@@ -289,11 +285,15 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       }
 
       final responseBody = jsonDecode(responsePrediksi.body);
-      // Laravel PrediksiController@predict mengembalikan: data.keterangan, data.probabilitas
-      final hasilKeterangan =
-          (responseBody['data']?['keterangan'] ?? 'Tidak diketahui') as String;
-      final hasilProbabilitas =
-          ((responseBody['data']?['probabilitas']) as num?)?.toDouble() ?? 0.0;
+      final mapData = responseBody['data'] ?? responseBody;
+
+      // === PERBAIKAN JSON PARSING BERDASARKAN DEBUG CONSOLE ===
+      // Mengambil status prediksi dari key 'hasil'
+      final hasilKeterangan = (mapData['hasil'] ?? 'Tidak diketahui').toString();
+      
+      // Mengambil probabilitas dari objek bersarang 'detail_ai' -> 'probabilitas'
+      final detailAi = mapData['detail_ai'] as Map<String, dynamic>? ?? {};
+      final hasilProbabilitas = (detailAi['probabilitas'] as num?)?.toDouble() ?? 0.0;
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -304,10 +304,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
               keterangan: hasilKeterangan,
               probabilitas: hasilProbabilitas,
               umurAnak: _umurAnakCtrl.text,
-              beratBadan:
-                  double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
-              tinggiBadan:
-                  double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')),
+              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
+              tinggiBadan: double.tryParse(
+                _tinggiCtrl.text.replaceAll(',', '.'),
+              ),
             ),
           ),
         );
@@ -424,11 +424,15 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       }
 
       final responseBodyPrediksi = jsonDecode(responsePrediksi.body);
-      // Laravel PrediksiController@predict mengembalikan: data.keterangan, data.probabilitas
-      final hasilKeterangan =
-          (responseBodyPrediksi['data']?['keterangan'] ?? 'Tidak diketahui') as String;
-      final hasilProbabilitas =
-          ((responseBodyPrediksi['data']?['probabilitas']) as num?)?.toDouble() ?? 0.0;
+      final mapData = responseBodyPrediksi['data'] ?? responseBodyPrediksi;
+
+      // === PERBAIKAN JSON PARSING BERDASARKAN DEBUG CONSOLE ===
+      // Mengambil status prediksi dari key 'hasil'
+      final hasilKeterangan = (mapData['hasil'] ?? 'Tidak diketahui').toString();
+      
+      // Mengambil probabilitas dari objek bersarang 'detail_ai' -> 'probabilitas'
+      final detailAi = mapData['detail_ai'] as Map<String, dynamic>? ?? {};
+      final hasilProbabilitas = (detailAi['probabilitas'] as num?)?.toDouble() ?? 0.0;
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -439,10 +443,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
               keterangan: hasilKeterangan,
               probabilitas: hasilProbabilitas,
               umurAnak: _umurAnakCtrl.text,
-              beratBadan:
-                  double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
-              tinggiBadan:
-                  double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')),
+              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
+              tinggiBadan: double.tryParse(
+                _tinggiCtrl.text.replaceAll(',', '.'),
+              ),
             ),
           ),
         );

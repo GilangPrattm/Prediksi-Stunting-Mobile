@@ -11,6 +11,7 @@ import 'cek_gizi_bottom_sheet.dart';
 import 'cek_stunting_page.dart';
 import 'chatbot_page.dart';
 import 'hasil_prediksi_page.dart';
+import 'riwayat_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -162,7 +163,7 @@ class _HomePageState extends State<HomePage> {
     // Riwayat Prediksi diakses via ikon di header beranda.
     final List<Widget> pages = [
       _buildBeranda(),
-      _buildPantauTumbuhKembang(), // Index 1: Riwayat Prediksi
+      RiwayatPage(daftarAnak: _daftarAnak), // Index 1: Riwayat Prediksi
       const SizedBox(), // Index 2: Prediksi (Di-intercept)
       _buildEdukasiResep(), // Index 3: MPASI
       const ProfilPage(), // Index 4: Akun Saya

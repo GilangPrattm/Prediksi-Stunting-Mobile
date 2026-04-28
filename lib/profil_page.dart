@@ -58,21 +58,48 @@ class _ProfilPageState extends State<ProfilPage> {
       }
 
       if (responseIbu.statusCode == 200) {
-        final dataList = jsonDecode(responseIbu.body);
-        if (dataList is List && dataList.isNotEmpty) {
-          final firstProfil = dataList[0];
-          final listAnak = firstProfil['anak'];
-          if (listAnak != null && listAnak is List && listAnak.isNotEmpty) {
+        try {
+          final responseData = jsonDecode(responseIbu.body);
+
+          // Response bisa berupa array atau object dengan key 'data'
+          final dataList = responseData is List
+              ? responseData
+              : (responseData['data'] is List ? responseData['data'] : []);
+
+          if (dataList is List && dataList.isNotEmpty) {
             List<String> names = [];
-            for (var a in listAnak) {
-              if (a['nama_anak'] != null) names.add(a['nama_anak']);
+
+            // Cek jika response adalah list of profil ibu
+            for (var item in dataList) {
+              // Cek struktur: profil ibu punya key 'anak' yang berisi list anak
+              if (item is Map && item.containsKey('anak')) {
+                final listAnak = item['anak'];
+                if (listAnak != null && listAnak is List) {
+                  for (var a in listAnak) {
+                    if (a is Map &&
+                        a.containsKey('nama_anak') &&
+                        a['nama_anak'] != null) {
+                      names.add(a['nama_anak'] as String);
+                    }
+                  }
+                }
+              }
+              // Fallback: jika item sendiri adalah anak atau punya struktur berbeda
+              else if (item is Map &&
+                  item.containsKey('nama_anak') &&
+                  item['nama_anak'] != null) {
+                names.add(item['nama_anak'] as String);
+              }
             }
+
             if (names.isNotEmpty) {
               setState(() {
                 _namaAnak = names.join(', ');
               });
             }
           }
+        } catch (e) {
+          debugPrint('Error parsing profil-ibu response: $e');
         }
       }
     } catch (e) {
