@@ -108,10 +108,18 @@ class _RiwayatPageState extends State<RiwayatPage> {
     }
   }
 
+  String _extractId(dynamic idValue) {
+    if (idValue == null) return '';
+    if (idValue is Map && idValue.containsKey('\$oid')) {
+      return idValue['\$oid'].toString();
+    }
+    return idValue.toString();
+  }
+
   List<dynamic> get _pengukuranTerpilih {
     if (_anakTerpilihId == null) return _dataPengukuran;
     return _dataPengukuran
-        .where((p) => p['id_anak']?.toString() == _anakTerpilihId)
+        .where((p) => _extractId(p['id_anak']) == _extractId(_anakTerpilihId))
         .toList()
       ..sort(
         (a, b) => (a['tanggal_ukur'] ?? '').compareTo(b['tanggal_ukur'] ?? ''),
@@ -121,16 +129,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
 List<dynamic> get _prediksiTerpilih {
   if (_anakTerpilihId == null) return _riwayatPrediksi;
   return _riwayatPrediksi.where((p) {
-    // Coba semua kemungkinan field
     String idDariAnak = '';
     if (p['anak'] is Map) {
-      idDariAnak = (p['anak']['_id'] ?? p['anak']['id'] ?? '').toString();
+      idDariAnak = _extractId(p['anak']['_id'] ?? p['anak']['id']);
     }
-    // Fallback ke id_anak di root (selalu cek, bukan hanya jika bukan Map)
     if (idDariAnak.isEmpty) {
-      idDariAnak = (p['id_anak'] ?? '').toString();
+      idDariAnak = _extractId(p['id_anak']);
     }
-    return idDariAnak == _anakTerpilihId.toString();
+    return idDariAnak == _extractId(_anakTerpilihId);
   }).toList();
 }
 
@@ -279,8 +285,8 @@ List<dynamic> get _prediksiTerpilih {
         itemCount: widget.daftarAnak.length,
         itemBuilder: (ctx, i) {
           final anak = widget.daftarAnak[i];
-          final id = anak['_id']?.toString() ?? anak['id']?.toString() ?? '';
-          final selected = id == _anakTerpilihId;
+          final id = _extractId(anak['_id'] ?? anak['id']);
+          final selected = id == _extractId(_anakTerpilihId);
           return GestureDetector(
             onTap: () => setState(() {
               _anakTerpilihId = id;
@@ -495,21 +501,28 @@ List<dynamic> get _prediksiTerpilih {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFF2196F3),
-            barWidth: 3,
+            color: const Color(0xFF009688), // Teal color
+            barWidth: 4,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
-                radius: 4,
-                color: const Color(0xFF2196F3),
-                strokeWidth: 2,
+                radius: 5,
+                color: const Color(0xFF009688),
+                strokeWidth: 3,
                 strokeColor: Colors.white,
               ),
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFF2196F3).withOpacity(0.1),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF009688).withOpacity(0.3),
+                  const Color(0xFF009688).withOpacity(0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ],
@@ -557,24 +570,28 @@ List<dynamic> get _prediksiTerpilih {
   }
 
   Widget _buildBarisTabel(Map<String, dynamic> item, int index) {
-    final hasil = item['hasil_prediksi'] ?? 'Tidak diketahui';
+    final hasilHA = item['hasil_prediksi'] ?? 'Tidak diketahui';
+    final hasilWA = item['hasil_wa'] ?? 'Tidak diketahui';
+    final hasilWH = item['hasil_wh'] ?? 'Tidak diketahui';
+    final hasilHFA = item['hasil_hfa'] ?? 'Tidak diketahui';
+    
     final namaAnak = item['anak'] is Map
         ? (item['anak']['nama_anak'] ?? '-')
         : '-';
     final idAnak = item['anak'] is Map
-        ? (item['anak']['_id'] ?? item['anak']['id'] ?? '')
-        : (item['id_anak'] ?? '');
+        ? _extractId(item['anak']['_id'] ?? item['anak']['id'])
+        : _extractId(item['id_anak']);
     final tanggal = (item['tanggal_prediksi'] ?? item['created_at'] ?? '-')
         .toString()
         .split('T')
         .first;
     final probabilitas = ((item['probabilitas']) as num?)?.toDouble() ?? 0.0;
-    final color = _warnaStatus(hasil);
-    final ikon = _ikonStatus(hasil);
+    final color = _warnaStatus(hasilHA);
+    final ikon = _ikonStatus(hasilHA);
 
     // Data anak terkait
     final anakData = widget.daftarAnak.firstWhere(
-      (a) => (a['_id'] ?? a['id'] ?? '').toString() == idAnak.toString(),
+      (a) => _extractId(a['_id'] ?? a['id']) == idAnak,
       orElse: () => <String, dynamic>{},
     );
 
@@ -584,7 +601,10 @@ List<dynamic> get _prediksiTerpilih {
         MaterialPageRoute(
           builder: (_) => HasilPrediksiPage(
             namaAnak: namaAnak,
-            keterangan: hasil,
+            keteranganHA: hasilHA,
+            keteranganWA: hasilWA,
+            keteranganWH: hasilWH,
+            keteranganHFA: hasilHFA,
             probabilitas: probabilitas,
             beratBadan: (anakData['berat_badan'] as num?)?.toDouble(),
             tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
@@ -669,7 +689,7 @@ List<dynamic> get _prediksiTerpilih {
                       Icon(ikon, size: 13, color: color),
                       const SizedBox(width: 4),
                       Text(
-                        hasil,
+                        hasilHA,
                         style: TextStyle(
                           color: color,
                           fontWeight: FontWeight.bold,
@@ -679,6 +699,18 @@ List<dynamic> get _prediksiTerpilih {
                     ],
                   ),
                 ),
+              ],
+            ),
+            
+            // Mini 4 Indikator Label
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _miniBadge('WA: $hasilWA', _warnaStatus(hasilWA)),
+                _miniBadge('WH: $hasilWH', _warnaStatus(hasilWH)),
+                _miniBadge('HFA: $hasilHFA', _warnaStatus(hasilHFA)),
               ],
             ),
             // Probabilitas
@@ -725,9 +757,7 @@ List<dynamic> get _prediksiTerpilih {
                       ? [anakData]
                       : widget.daftarAnak
                             .where(
-                              (a) =>
-                                  (a['_id'] ?? a['id'] ?? '').toString() ==
-                                  idAnak.toString(),
+                              (a) => _extractId(a['_id'] ?? a['id']) == idAnak,
                             )
                             .toList();
                   Navigator.push(
@@ -789,4 +819,19 @@ List<dynamic> get _prediksiTerpilih {
       ],
     ),
   );
+
+  Widget _miniBadge(String text, Color col) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: col.withOpacity(0.1),
+        border: Border.all(color: col.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 9, color: col, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
 }

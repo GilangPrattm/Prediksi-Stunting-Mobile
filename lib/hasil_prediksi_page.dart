@@ -4,7 +4,10 @@ import 'theme/app_theme.dart';
 /// Halaman hasil prediksi stunting yang ditampilkan setelah analisis AI selesai.
 class HasilPrediksiPage extends StatefulWidget {
   final String namaAnak;
-  final String keterangan; // "Normal", "Berisiko Stunting", "Stunting"
+  final String keteranganHA;
+  final String keteranganWA;
+  final String keteranganWH;
+  final String keteranganHFA;
   final double probabilitas; // 0.0 - 1.0
   final String? umurAnak;
   final double? beratBadan;
@@ -13,7 +16,10 @@ class HasilPrediksiPage extends StatefulWidget {
   const HasilPrediksiPage({
     super.key,
     required this.namaAnak,
-    required this.keterangan,
+    required this.keteranganHA,
+    required this.keteranganWA,
+    required this.keteranganWH,
+    required this.keteranganHFA,
     required this.probabilitas,
     this.umurAnak,
     this.beratBadan,
@@ -76,9 +82,9 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
     super.dispose();
   }
 
-  // ─── Konfigurasi berdasarkan status ──────────────────────────────────────
+  // ─── Konfigurasi berdasarkan status UTAMA (HA) ─────────────────────────
   Color get _statusColor {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
         return const Color(0xFF10B981); // emerald
       case 'berisiko stunting':
@@ -92,7 +98,7 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
   }
 
   List<Color> get _gradientColors {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
         return [const Color(0xFF10B981), const Color(0xFF059669)];
       case 'berisiko stunting':
@@ -106,7 +112,7 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
   }
 
   IconData get _statusIcon {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
         return Icons.check_circle_rounded;
       case 'berisiko stunting':
@@ -120,7 +126,7 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
   }
 
   String get _statusEmoji {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
         return '🎉';
       case 'berisiko stunting':
@@ -134,9 +140,9 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
   }
 
   String get _pesanUtama {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
-        return 'Pertumbuhan ${widget.namaAnak} dalam kondisi baik dan sesuai standar WHO.';
+        return 'Berdasarkan parameter Tinggi/Umur, pertumbuhan ${widget.namaAnak} dalam kondisi baik dan sesuai standar WHO.';
       case 'berisiko stunting':
       case 'berisiko':
         return '${widget.namaAnak} berisiko mengalami stunting. Perlu perhatian lebih pada asupan gizi.';
@@ -148,7 +154,7 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
   }
 
   List<_RekomendasiItem> get _rekomendasi {
-    switch (widget.keterangan.toLowerCase()) {
+    switch (widget.keteranganHA.toLowerCase()) {
       case 'normal':
         return [
           _RekomendasiItem(
@@ -259,9 +265,9 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
                         ),
                         const SizedBox(height: 16),
 
-                        // Label hasil
+                        // Label hasil utama
                         Text(
-                          '${_statusEmoji}  ${widget.keterangan.toUpperCase()}',
+                          '${_statusEmoji}  ${widget.keteranganHA.toUpperCase()}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 22,
@@ -303,6 +309,31 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Kartu Rincian 4 Indikator ─────────────────────────
+                    const Text(
+                      'Rincian Indikator Gizi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.5,
+                      children: [
+                        _buildIndikatorCard('Tinggi/Umur (HA)', widget.keteranganHA, Icons.height),
+                        _buildIndikatorCard('Berat/Umur (WA)', widget.keteranganWA, Icons.scale),
+                        _buildIndikatorCard('Berat/Tinggi (WH)', widget.keteranganWH, Icons.accessibility_new),
+                        _buildIndikatorCard('Height/Age (HFA)', widget.keteranganHFA, Icons.child_care),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     // ── Kartu Kepercayaan AI ─────────────────────────────
                     _buildConfidenceCard(persen),
                     const SizedBox(height: 20),
@@ -370,6 +401,72 @@ class _HasilPrediksiPageState extends State<HasilPrediksiPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildIndikatorCard(String judul, String status, IconData icon) {
+    Color cardColor;
+    switch (status.toLowerCase()) {
+      case 'normal':
+        cardColor = const Color(0xFF10B981); // emerald
+        break;
+      case 'berisiko':
+      case 'berisiko stunting':
+      case 'lebih':
+        cardColor = const Color(0xFFF59E0B); // amber
+        break;
+      case 'stunting':
+      case 'kurang':
+      case 'sangat kurang':
+      case 'buruk':
+      case 'obesitas':
+      case 'stunted':
+        cardColor = const Color(0xFFEF4444); // red
+        break;
+      default:
+        cardColor = const Color(0xFF6B7280); // gray
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardColor.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: cardColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: cardColor, size: 24),
+          const SizedBox(height: 6),
+          Text(
+            judul,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF4B5563),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            status.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: cardColor,
+            ),
+          ),
+        ],
       ),
     );
   }

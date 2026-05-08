@@ -287,29 +287,39 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       final responseBody = jsonDecode(responsePrediksi.body);
       final mapData = responseBody['data'] ?? responseBody;
 
-      // === PERBAIKAN JSON PARSING BERDASARKAN DEBUG CONSOLE ===
-      // Mengambil status prediksi dari key 'hasil'
-      final hasilKeterangan = (mapData['hasil'] ?? 'Tidak diketahui').toString();
+      // Mengambil status prediksi dari key 'status' sesuai dengan perubahan di backend
+      final status = mapData['status'] as Map<String, dynamic>? ?? {};
+      final hasilHA = (status['ha'] ?? 'Unknown').toString();
+      final hasilWA = (status['wa'] ?? 'Unknown').toString();
+      final hasilWH = (status['wh'] ?? 'Unknown').toString();
+      final hasilHFA = (status['hfa'] ?? 'Unknown').toString();
       
-      // Mengambil probabilitas dari objek bersarang 'detail_ai' -> 'probabilitas'
-      final detailAi = mapData['detail_ai'] as Map<String, dynamic>? ?? {};
-      final hasilProbabilitas = (detailAi['probabilitas'] as num?)?.toDouble() ?? 0.0;
+      // Mengambil probabilitas — coba dari top-level dulu, lalu dari nested prediksi
+      double hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 0.0;
+      if (hasilProbabilitas == 0.0) {
+        final dynamic prediksiObj = mapData['prediksi'];
+        if (prediksiObj is Map<String, dynamic>) {
+          final stuntingHa = prediksiObj['stunting_ha'] as Map<String, dynamic>? ?? {};
+          hasilProbabilitas = (stuntingHa['probabilitas'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
 
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (context) => HasilPrediksiPage(
               namaAnak: _selectedAnak['nama_anak'] ?? 'Anak',
-              keterangan: hasilKeterangan,
+              keteranganHA: hasilHA,
+              keteranganWA: hasilWA,
+              keteranganWH: hasilWH,
+              keteranganHFA: hasilHFA,
               probabilitas: hasilProbabilitas,
-              umurAnak: _umurAnakCtrl.text,
-              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
-              tinggiBadan: double.tryParse(
-                _tinggiCtrl.text.replaceAll(',', '.'),
-              ),
+              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
+              tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
+          (Route<dynamic> route) => route.isFirst, // Sesuai permintaan untuk clear stack ke beranda
         );
       }
     } catch (e) {
@@ -426,29 +436,39 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       final responseBodyPrediksi = jsonDecode(responsePrediksi.body);
       final mapData = responseBodyPrediksi['data'] ?? responseBodyPrediksi;
 
-      // === PERBAIKAN JSON PARSING BERDASARKAN DEBUG CONSOLE ===
-      // Mengambil status prediksi dari key 'hasil'
-      final hasilKeterangan = (mapData['hasil'] ?? 'Tidak diketahui').toString();
+      // Mengambil status prediksi dari key 'status' sesuai dengan perubahan di backend
+      final status = mapData['status'] as Map<String, dynamic>? ?? {};
+      final hasilHA = (status['ha'] ?? 'Unknown').toString();
+      final hasilWA = (status['wa'] ?? 'Unknown').toString();
+      final hasilWH = (status['wh'] ?? 'Unknown').toString();
+      final hasilHFA = (status['hfa'] ?? 'Unknown').toString();
       
-      // Mengambil probabilitas dari objek bersarang 'detail_ai' -> 'probabilitas'
-      final detailAi = mapData['detail_ai'] as Map<String, dynamic>? ?? {};
-      final hasilProbabilitas = (detailAi['probabilitas'] as num?)?.toDouble() ?? 0.0;
+      // Mengambil probabilitas — coba dari top-level dulu, lalu dari nested prediksi
+      double hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 0.0;
+      if (hasilProbabilitas == 0.0) {
+        final dynamic prediksiObj = mapData['prediksi'];
+        if (prediksiObj is Map<String, dynamic>) {
+          final stuntingHa = prediksiObj['stunting_ha'] as Map<String, dynamic>? ?? {};
+          hasilProbabilitas = (stuntingHa['probabilitas'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
 
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (context) => HasilPrediksiPage(
               namaAnak: _namaAnakCtrl.text,
-              keterangan: hasilKeterangan,
+              keteranganHA: hasilHA,
+              keteranganWA: hasilWA,
+              keteranganWH: hasilWH,
+              keteranganHFA: hasilHFA,
               probabilitas: hasilProbabilitas,
-              umurAnak: _umurAnakCtrl.text,
-              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')),
-              tinggiBadan: double.tryParse(
-                _tinggiCtrl.text.replaceAll(',', '.'),
-              ),
+              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
+              tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
+          (Route<dynamic> route) => route.isFirst, // Tetap simpan HomePage di stack
         );
       }
     } catch (e) {
@@ -896,9 +916,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
 
             _buildTextField(
               controller: _nikCtrl,
-              label: 'NIK Anak (Opsional / Jika ada)',
+              label: 'NIK Anak',
               hint: 'Contoh: 3509...',
               keyboardType: TextInputType.number,
+              validator: (v) => _validateRequired(v, 'NIK Anak'),
             ),
             const SizedBox(height: 16),
 

@@ -44,6 +44,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
       if (responseAkun.statusCode == 200) {
         final data = jsonDecode(responseAkun.body)['data'];
+        if (!mounted) return;
         setState(() {
           _nama = data['name'] ?? 'Pengguna';
           _email = data['email'] ?? '';
@@ -92,7 +93,7 @@ class _ProfilPageState extends State<ProfilPage> {
               }
             }
 
-            if (names.isNotEmpty) {
+            if (names.isNotEmpty && mounted) {
               setState(() {
                 _namaAnak = names.join(', ');
               });
@@ -105,26 +106,26 @@ class _ProfilPageState extends State<ProfilPage> {
     } catch (e) {
       // Ignored for UI
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _keluar() async {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Keluar dari Aplikasi?'),
         content: const Text(
           'Anda harus login kembali untuk mengakses data gizi.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Tutup dialog dulu
+              Navigator.pop(dialogContext); // Tutup dialog menggunakan context dialog
               SharedPreferences prefs = await SharedPreferences.getInstance();
               String? token = prefs.getString('token');
 
@@ -147,6 +148,8 @@ class _ProfilPageState extends State<ProfilPage> {
               // Baru hapus semua data lokal
               await prefs.clear();
               if (!mounted) return;
+              
+              // Gunakan context utama dari StatefulWidget, bukan dialogContext
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (c) => const LoginPage()),
@@ -247,7 +250,8 @@ class _ProfilPageState extends State<ProfilPage> {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A11CB),
+                        backgroundColor: const Color(0xFF009688),
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -283,7 +287,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue Color
+    const Color primaryColor = Color(0xFF009688); // Teal Color
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -324,14 +328,14 @@ class _ProfilPageState extends State<ProfilPage> {
                               Text(
                                 'Akun Saya',
                                 style: TextStyle(
-                                  color: Color(0xFF1E293B),
+                                  color: Colors.white,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Icon(
                                 Icons.settings_outlined,
-                                color: Color(0xFF1E293B),
+                                color: Colors.white,
                               ),
                             ],
                           ),
@@ -371,7 +375,7 @@ class _ProfilPageState extends State<ProfilPage> {
                                     child: Text(
                                       _inisial,
                                       style: const TextStyle(
-                                        color: Color(0xFF1E293B),
+                                        color: Color(0xFF009688),
                                         fontSize: 32,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -385,7 +389,7 @@ class _ProfilPageState extends State<ProfilPage> {
                                     ),
                                     child: const Icon(
                                       Icons.person_outline,
-                                      color: Color(0xFF1E293B),
+                                      color: Colors.white,
                                       size: 16,
                                     ),
                                   ),
@@ -403,11 +407,20 @@ class _ProfilPageState extends State<ProfilPage> {
                                 ),
                               ),
                               const SizedBox(height: 5),
-                              Text(
-                                'Ibu dari $_namaAnak',
-                                style: const TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 14,
+                              ShaderMask(
+                                shaderCallback: (Rect bounds) {
+                                  return const LinearGradient(
+                                    colors: [Color(0xFF2196F3), Color(0xFF009688)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ).createShader(bounds);
+                                },
+                                child: Text(
+                                  'Ibu dari $_namaAnak',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
 

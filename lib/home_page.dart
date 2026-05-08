@@ -99,8 +99,7 @@ class _HomePageState extends State<HomePage> {
       if (resHistori.statusCode == 200) {
         final dataHistori = jsonDecode(resHistori.body);
         setState(() {
-          _daftarHistoriPrediksi = (dataHistori['data'] as List)
-              .reversed
+          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed
               .toList(); // Terbaru di atas
           _isLoadingHistori = false;
         });
@@ -185,66 +184,106 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFFBFDBFE),
         child: const Icon(Icons.smart_toy, color: Color(0xFF1E293B)),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Color(0xFF1E293B),
-        unselectedItemColor: Colors.grey.shade600,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
+      extendBody: true,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.normal,
-          fontSize: 10,
-        ),
-        elevation: 20,
-        backgroundColor: Colors.white,
-        onTap: (index) {
-          if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CekStuntingPage(
-                  isIbuDataComplete: _isProfilIbuLengkap,
-                  daftarAnak: _daftarAnak,
-                ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF009688), // Teal
+            unselectedItemColor: Colors.grey.shade400,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 10,
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            onTap: (index) {
+              if (index == 2) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CekStuntingPage(
+                      isIbuDataComplete: _isProfilIbuLengkap,
+                      daftarAnak: _daftarAnak,
+                    ),
+                  ),
+                );
+              } else {
+                setState(() => _selectedIndex = index);
+              }
+            },
+            items: [
+              _buildNavItem(Icons.home_outlined, Icons.home_rounded, 'Beranda'),
+              _buildNavItem(
+                Icons.history_outlined,
+                Icons.history_rounded,
+                'Riwayat',
               ),
-            );
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'Beranda',
+              BottomNavigationBarItem(
+                icon: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF009688),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.analytics_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                label: '',
+              ),
+              _buildNavItem(
+                Icons.restaurant_menu_outlined,
+                Icons.restaurant_menu_rounded,
+                'MPASI',
+              ),
+              _buildNavItem(
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                'Profil',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'Riwayat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: 'Prediksi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            activeIcon: Icon(Icons.restaurant_menu),
-            label: 'MPASI',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Akun Saya',
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
+    return BottomNavigationBarItem(
+      icon: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Icon(icon, size: 24),
+      ),
+      activeIcon: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Icon(activeIcon, size: 24),
+      ),
+      label: label,
     );
   }
 
@@ -293,127 +332,131 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   children: [
                     // Banner Waktunya Cek Gizi!
-                      if (hasData)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 25),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFBFDBFE), // Light Blue
-                            borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0xFFBFDBFE).withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
+                    if (hasData)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 25),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFBFDBFE), // Light Blue
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFFBFDBFE).withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Waktunya Cek Gizi!',
+                              style: TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Waktunya Cek Gizi!',
-                                style: TextStyle(
-                                  color: Color(0xFF1E293B),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Pastikan tumbuh kembang si kecil sesuai dengan usianya.',
+                              style: TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontSize: 13,
                               ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Pastikan tumbuh kembang si kecil sesuai dengan usianya.',
-                                style: TextStyle(
-                                  color: Color(0xFF1E293B),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CekStuntingPage(
-                                        isIbuDataComplete: _isProfilIbuLengkap,
-                                        daftarAnak: _daftarAnak,
-                                      ),
+                            ),
+                            const SizedBox(height: 15),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CekStuntingPage(
+                                      isIbuDataComplete: _isProfilIbuLengkap,
+                                      daftarAnak: _daftarAnak,
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF1E293B),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
-                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1E293B),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Cek Gizi Sekarang',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 5),
-                                    Icon(Icons.chevron_right, size: 18, color: Color(0xFF1E293B)),
-                                  ],
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
                                 ),
                               ),
-                            ],
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Cek Gizi Sekarang',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 18,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Tips Area
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Tips Hari Ini',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B),
                           ),
                         ),
-
-                      // Tips Area
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Tips Hari Ini',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
-                            ),
+                        Text(
+                          'Lihat Semua',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E293B),
                           ),
-                          Text(
-                            'Lihat Semua',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
 
-                      _buildTipsCardLama(
-                        'Pentingnya Sayur Hijau untuk Anak',
-                        'Oleh Dr. Kila • 3 min read',
-                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTipsCardLama(
-                        'Pola Tidur yang Memicu Pertumbuhan',
-                        'Oleh Dr. Kila • 5 min read',
-                        'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400',
-                      ),
-                      const SizedBox(height: 50),
-                    ],
-                  ),
+                    _buildTipsCardLama(
+                      'Pentingnya Sayur Hijau untuk Anak',
+                      'Oleh Dr. Kila • 3 min read',
+                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTipsCardLama(
+                      'Pola Tidur yang Memicu Pertumbuhan',
+                      'Oleh Dr. Kila • 5 min read',
+                      'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400',
+                    ),
+                    const SizedBox(height: 50),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   // --- KOMPONEN HEADER BARU ---
@@ -508,7 +551,9 @@ class _HomePageState extends State<HomePage> {
     String tinggiBadanAsli = anakAktif['tinggi_badan']?.toString() ?? '-';
     String beratBadanAsli = anakAktif['berat_badan']?.toString() ?? '-';
     // Case-insensitive check untuk semua variasi penulisan jenis kelamin
-    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '').toString().toLowerCase();
+    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '')
+        .toString()
+        .toLowerCase();
     final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
     String kelamin = isLakiLaki ? 'LAKI-LAKI' : 'PEREMPUAN';
     Color warnaBadgeKelamin = isLakiLaki
@@ -586,7 +631,10 @@ class _HomePageState extends State<HomePage> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFBFDBFE),
                       borderRadius: BorderRadius.circular(20),
@@ -603,7 +651,11 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         const SizedBox(width: 2),
-                        const Icon(Icons.chevron_right, color: Color(0xFF1E293B), size: 16),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFF1E293B),
+                          size: 16,
+                        ),
                       ],
                     ),
                   ),
@@ -855,7 +907,10 @@ class _HomePageState extends State<HomePage> {
                 width: 60,
                 height: 60,
                 color: Colors.grey[300],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey,
+                ),
               ),
             ),
           ),
@@ -889,13 +944,31 @@ class _HomePageState extends State<HomePage> {
   // ==== WIDGET TAB 1: RIWAYAT PREDIKSI ====
   Widget _buildPantauTumbuhKembang() {
     // Hitung statistik ringkas
-    int jmlNormal = _daftarHistoriPrediksi.where((e) =>
-        (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains('normal')).length;
-    int jmlBerisiko = _daftarHistoriPrediksi.where((e) =>
-        (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains('berisiko')).length;
-    int jmlStunting = _daftarHistoriPrediksi.where((e) =>
-        (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains('stunting') &&
-        !(e['hasil_prediksi'] ?? '').toString().toLowerCase().contains('berisiko')).length;
+    int jmlNormal = _daftarHistoriPrediksi
+        .where(
+          (e) => (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
+            'normal',
+          ),
+        )
+        .length;
+    int jmlBerisiko = _daftarHistoriPrediksi
+        .where(
+          (e) => (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
+            'berisiko',
+          ),
+        )
+        .length;
+    int jmlStunting = _daftarHistoriPrediksi
+        .where(
+          (e) =>
+              (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
+                'stunting',
+              ) &&
+              !(e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
+                'berisiko',
+              ),
+        )
+        .length;
 
     return SafeArea(
       child: Column(
@@ -934,11 +1007,23 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      _buildStatChip('Normal', jmlNormal, const Color(0xFF10B981)),
+                      _buildStatChip(
+                        'Normal',
+                        jmlNormal,
+                        const Color(0xFF10B981),
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatChip('Berisiko', jmlBerisiko, const Color(0xFFF59E0B)),
+                      _buildStatChip(
+                        'Berisiko',
+                        jmlBerisiko,
+                        const Color(0xFFF59E0B),
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatChip('Stunting', jmlStunting, const Color(0xFFEF4444)),
+                      _buildStatChip(
+                        'Stunting',
+                        jmlStunting,
+                        const Color(0xFFEF4444),
+                      ),
                     ],
                   ),
                 ],
@@ -949,38 +1034,53 @@ class _HomePageState extends State<HomePage> {
           // Isi Riwayat
           Expanded(
             child: _isLoadingHistori
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFBFDBFE)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFBFDBFE)),
+                  )
                 : _daftarHistoriPrediksi.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.history_toggle_off, size: 60, color: Colors.grey.shade300),
-                            const SizedBox(height: 15),
-                            const Text(
-                              'Belum Ada Riwayat Prediksi',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Lakukan Cek Stunting terlebih dahulu\nuntuk melihat hasil analisis AI di sini.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history_toggle_off,
+                          size: 60,
+                          color: Colors.grey.shade300,
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _fetchProfilDanAnak,
-                        color: const Color(0xFFBFDBFE),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: _daftarHistoriPrediksi.length,
-                          itemBuilder: (context, index) {
-                            return _buildKartuHistori(_daftarHistoriPrediksi[index]);
-                          },
+                        const SizedBox(height: 15),
+                        const Text(
+                          'Belum Ada Riwayat Prediksi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Lakukan Cek Stunting terlebih dahulu\nuntuk melihat hasil analisis AI di sini.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _fetchProfilDanAnak,
+                    color: const Color(0xFFBFDBFE),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _daftarHistoriPrediksi.length,
+                      itemBuilder: (context, index) {
+                        return _buildKartuHistori(
+                          _daftarHistoriPrediksi[index],
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -1014,7 +1114,8 @@ class _HomePageState extends State<HomePage> {
     final String idAnak = item['anak'] is Map
         ? (item['anak']['_id'] ?? item['anak']['id'] ?? '')
         : (item['id_anak'] ?? '');
-    final String tanggal = item['tanggal_prediksi'] ?? item['created_at'] ?? '-';
+    final String tanggal =
+        item['tanggal_prediksi'] ?? item['created_at'] ?? '-';
     final double probabilitas =
         ((item['probabilitas']) as num?)?.toDouble() ?? 0.0;
 
@@ -1023,11 +1124,15 @@ class _HomePageState extends State<HomePage> {
     IconData ikon;
 
     final String hasilLower = hasil.toLowerCase();
-    if (hasilLower.contains('normal') && !hasilLower.contains('berisiko') && !hasilLower.contains('stunting')) {
+    if (hasilLower.contains('normal') &&
+        !hasilLower.contains('berisiko') &&
+        !hasilLower.contains('stunting')) {
       warnaBg = const Color(0xFFDCFAE6);
       warnaText = const Color(0xFF166534);
       ikon = Icons.check_circle_rounded;
-    } else if (hasilLower.contains('berisiko') || hasilLower.contains('resiko') || hasilLower.contains('risiko')) {
+    } else if (hasilLower.contains('berisiko') ||
+        hasilLower.contains('resiko') ||
+        hasilLower.contains('risiko')) {
       warnaBg = const Color(0xFFFFF7CD);
       warnaText = const Color(0xFF92400E);
       ikon = Icons.warning_amber_rounded;
@@ -1051,10 +1156,13 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(
             builder: (_) => HasilPrediksiPage(
               namaAnak: namaAnak,
-              keterangan: hasil,
+              keteranganHA: hasil,
               probabilitas: probabilitas,
               beratBadan: (anakData['berat_badan'] as num?)?.toDouble(),
               tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
+              keteranganWA: item['keterangan_wa'] ?? '',
+              keteranganWH: item['keterangan_wh'] ?? '',
+              keteranganHFA: item['keterangan_hfa'] ?? '',
             ),
           ),
         );
@@ -1082,7 +1190,10 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: warnaBg, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: warnaBg,
+                    shape: BoxShape.circle,
+                  ),
                   child: Icon(ikon, color: warnaText, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -1101,20 +1212,30 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 2),
                       Text(
                         tanggal.toString().split('T').first,
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: warnaBg,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     hasil,
-                    style: TextStyle(color: warnaText, fontWeight: FontWeight.bold, fontSize: 11),
+                    style: TextStyle(
+                      color: warnaText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ],
@@ -1164,14 +1285,21 @@ class _HomePageState extends State<HomePage> {
                   // Buka CekStuntingPage dengan anak ini sudah terpilih
                   final List<dynamic> anakList = anakData.isNotEmpty
                       ? [anakData]
-                      : _daftarAnak.where((a) =>
-                          (a['_id'] ?? a['id'] ?? '').toString() == idAnak).toList();
+                      : _daftarAnak
+                            .where(
+                              (a) =>
+                                  (a['_id'] ?? a['id'] ?? '').toString() ==
+                                  idAnak,
+                            )
+                            .toList();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => CekStuntingPage(
                         isIbuDataComplete: true,
-                        daftarAnak: anakList.isNotEmpty ? anakList : _daftarAnak,
+                        daftarAnak: anakList.isNotEmpty
+                            ? anakList
+                            : _daftarAnak,
                       ),
                     ),
                   ).then((_) => _fetchProfilDanAnak());
@@ -1334,7 +1462,10 @@ class _HomePageState extends State<HomePage> {
                 width: 70,
                 height: 70,
                 color: Colors.grey[300],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey,
+                ),
               ),
             ),
           ),
