@@ -336,15 +336,19 @@ class _HomePageState extends State<HomePage> {
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 25),
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFBFDBFE), // Light Blue
-                          borderRadius: BorderRadius.circular(25),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Color(0xFFBFDBFE).withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                              color: const Color(0xFF3B82F6).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
                           ],
                         ),
@@ -354,20 +358,22 @@ class _HomePageState extends State<HomePage> {
                             const Text(
                               'Waktunya Cek Gizi!',
                               style: TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 18,
+                                color: Colors.white,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Pastikan tumbuh kembang si kecil sesuai dengan usianya.',
                               style: TextStyle(
-                                color: Color(0xFF1E293B),
+                                color: Colors.white.withOpacity(0.9),
                                 fontSize: 13,
+                                height: 1.4,
                               ),
                             ),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 20),
                             ElevatedButton(
                               onPressed: () {
                                 Navigator.push(
@@ -382,14 +388,15 @@ class _HomePageState extends State<HomePage> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1E293B),
+                                foregroundColor: const Color(0xFF2563EB),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 10,
+                                  horizontal: 24,
+                                  vertical: 12,
                                 ),
+                                elevation: 0,
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -398,13 +405,14 @@ class _HomePageState extends State<HomePage> {
                                     'Cek Gizi Sekarang',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                  SizedBox(width: 5),
+                                  SizedBox(width: 8),
                                   Icon(
-                                    Icons.chevron_right,
+                                    Icons.arrow_forward_rounded,
                                     size: 18,
-                                    color: Color(0xFF1E293B),
+                                    color: Color(0xFF2563EB),
                                   ),
                                 ],
                               ),
@@ -465,10 +473,14 @@ class _HomePageState extends State<HomePage> {
 
     return Container(
       width: double.infinity,
-      height: 210,
-      padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+      height: 220,
+      padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
       decoration: const BoxDecoration(
-        color: Color(0xFFBFDBFE), // Solid Light Blue
+        gradient: LinearGradient(
+          colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)], // Premium Deep Blue to Vibrant Blue
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(40),
           bottomRight: Radius.circular(40),
@@ -484,15 +496,16 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // Avatar Mini
                 Container(
-                  width: 45,
-                  height: 45,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
                   ),
-                  child: const Icon(Icons.person, color: Colors.grey),
+                  child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,17 +513,19 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         'Selamat Pagi,',
                         style: TextStyle(
-                          color: Color(0xFF1E293B).withOpacity(0.7),
-                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         'Halo, Bunda $displayNama!',
                         style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                          letterSpacing: 0.5,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -523,15 +538,15 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 10),
           // Notifikasi Bell
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Color(0xFF1E293B).withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.notifications_none,
-              color: Color(0xFF1E293B),
-              size: 20,
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+              size: 22,
             ),
           ),
         ],
@@ -565,15 +580,16 @@ class _HomePageState extends State<HomePage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(30), // Very smooth rounded
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF3B82F6).withOpacity(0.12),
+            blurRadius: 25,
+            spreadRadius: 5,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -632,11 +648,11 @@ class _HomePageState extends State<HomePage> {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFBFDBFE),
+                      color: const Color(0xFFEFF6FF), // blue-50
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -645,15 +661,15 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           '${_anakTerpilihIndeks + 1}/${_daftarAnak.length}',
                           style: const TextStyle(
-                            color: Color(0xFF1E293B),
-                            fontSize: 11,
+                            color: Color(0xFF2563EB), // blue-600
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF1E293B),
+                          Icons.swap_horiz_rounded,
+                          color: Color(0xFF2563EB),
                           size: 16,
                         ),
                       ],
@@ -1156,13 +1172,10 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(
             builder: (_) => HasilPrediksiPage(
               namaAnak: namaAnak,
-              keteranganHA: hasil,
+              hasilPrediksi: hasil,
               probabilitas: probabilitas,
               beratBadan: (anakData['berat_badan'] as num?)?.toDouble(),
               tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
-              keteranganWA: item['keterangan_wa'] ?? '',
-              keteranganWH: item['keterangan_wh'] ?? '',
-              keteranganHFA: item['keterangan_hfa'] ?? '',
             ),
           ),
         );
