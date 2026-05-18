@@ -20,14 +20,20 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
   // Controller Profil Kesehatan (ibu table)
   final TextEditingController _tglLahirController = TextEditingController();
-  final TextEditingController _teleponController =
-      TextEditingController(); // Dummy UI only
+  final TextEditingController _teleponController = TextEditingController();
   final TextEditingController _tinggiController = TextEditingController();
   String? _pendidikanPilih;
   String? _pekerjaanPilih;
 
   bool _isLoading = true;
   bool _isSaving = false;
+
+  // --- WARNA TEMA KONSISTEN ---
+  final Color _primaryBlue = const Color(0xFF1978E5);
+  final Color _bgHitam = const Color(0xFF0B1C30);
+  final Color _surfaceBg = const Color(0xFFF8F9FF);
+  final Color _outlineColor = const Color(0xFF717785);
+  final Color _inputBg = const Color(0xFFF8F9FF);
 
   @override
   void initState() {
@@ -60,7 +66,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
       }
 
       if (responseIbu.statusCode == 200) {
-        // Backend mengembalikan array langsung, bukan {data:[...]}
         final dataIbu = jsonDecode(responseIbu.body);
         if (dataIbu is List && dataIbu.isNotEmpty) {
           final firstIbu = dataIbu[0];
@@ -92,10 +97,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFBFDBFE),
-              onPrimary: Color(0xFF1E293B),
-              onSurface: Colors.black,
+            colorScheme: ColorScheme.light(
+              primary: _primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: _bgHitam,
             ),
           ),
           child: child!,
@@ -124,8 +129,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         DateTime dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
         DateTime now = DateTime.now();
         calculatedUsia = now.year - dob.year;
-        if (now.month < dob.month ||
-            (now.month == dob.month && now.day < dob.day)) {
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
           calculatedUsia--;
         }
       }
@@ -164,9 +168,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
       setState(() => _isSaving = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hore! Seluruh Profil Bunda berhasil diperbarui.'),
-          backgroundColor: Color(0xFFBFDBFE),
+        SnackBar(
+          content: const Text('Hore! Seluruh Profil Bunda berhasil diperbarui.', style: TextStyle(color: Colors.white)),
+          backgroundColor: _primaryBlue,
         ),
       );
       Navigator.pop(context, true);
@@ -184,68 +188,65 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue Color
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _surfaceBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Edit Profil Ibu',
           style: TextStyle(
-            color: Colors.black87,
+            color: _bgHitam,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        backgroundColor: _surfaceBg,
+        iconTheme: IconThemeData(color: _bgHitam),
         elevation: 0,
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Center(child: CircularProgressIndicator(color: _primaryBlue))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Info Banner
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(15),
+                      color: const Color(0xFFEFF4FF),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFDCE9FF)),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.blue.shade400,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
+                        Icon(Icons.info_outline, color: _primaryBlue, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
                           child: Text(
                             'Pastikan data Bunda valid agar rekomendasi MPASI & AI lebih akurat!',
-                            style: TextStyle(color: Colors.blue, fontSize: 12),
+                            style: TextStyle(color: _primaryBlue.withOpacity(0.9), fontSize: 13, height: 1.4),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // Form Container Berbayang
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: _primaryBlue.withOpacity(0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -256,12 +257,14 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           _nameController,
                           Icons.person_outline,
                           false,
+                          hint: 'Masukkan nama lengkap',
                         ),
                         _buildInputGroup(
                           'Alamat Email',
                           _emailController,
                           Icons.email_outlined,
-                          true,
+                          true, // Email biasanya tidak bisa diubah langsung
+                          hint: 'Email Bunda',
                         ),
                         _buildInputGroup(
                           'Nomor Telepon',
@@ -269,38 +272,30 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           Icons.phone_outlined,
                           false,
                           type: TextInputType.phone,
+                          hint: 'Contoh: 08123456789',
                         ),
 
                         // Tanggal Lahir (Dihitung ke Usia di background)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Tanggal Lahir',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF64748B),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
+                              _buildLabel('Tanggal Lahir'),
                               TextFormField(
                                 controller: _tglLahirController,
                                 readOnly: true,
                                 onTap: _pilihTanggal,
+                                style: TextStyle(color: _bgHitam, fontSize: 14),
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(
-                                    Icons.calendar_month,
-                                    color: primaryColor,
-                                  ),
+                                  hintText: 'Pilih Tanggal',
+                                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                                  prefixIcon: Icon(Icons.calendar_today_outlined, color: _primaryBlue.withOpacity(0.7), size: 22),
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  fillColor: _inputBg,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryBlue, width: 1.5)),
                                 ),
                               ),
                             ],
@@ -313,56 +308,33 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           Icons.straighten_outlined,
                           false,
                           type: TextInputType.number,
+                          hint: 'Masukkan tinggi badan',
                         ),
 
                         // Dropdown Pendidikan
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Pendidikan Terakhir',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF64748B),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
+                              _buildLabel('Pendidikan Terakhir'),
                               DropdownButtonFormField<String>(
+                                value: _pendidikanPilih,
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(
-                                    Icons.school_outlined,
-                                    color: primaryColor,
-                                  ),
+                                  prefixIcon: Icon(Icons.school_outlined, color: _primaryBlue.withOpacity(0.7), size: 22),
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  fillColor: _inputBg,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryBlue, width: 1.5)),
                                 ),
-                                initialValue: _pendidikanPilih,
-                                hint: const Text('Pilih Pendidikan'),
-                                items:
-                                    [
-                                          'SD',
-                                          'SMP',
-                                          'SMA',
-                                          'Diploma',
-                                          'S1',
-                                          'S2/S3',
-                                        ]
-                                        .map(
-                                          (String val) => DropdownMenuItem(
-                                            value: val,
-                                            child: Text(val),
-                                          ),
-                                        )
-                                        .toList(),
-                                onChanged: (val) =>
-                                    setState(() => _pendidikanPilih = val),
+                                hint: Text('Pilih Pendidikan', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                                style: TextStyle(color: _bgHitam, fontSize: 14),
+                                items: ['SD', 'SMP', 'SMA', 'Diploma', 'S1', 'S2/S3'].map((String val) {
+                                  return DropdownMenuItem(value: val, child: Text(val));
+                                }).toList(),
+                                onChanged: (val) => setState(() => _pendidikanPilih = val),
                               ),
                             ],
                           ),
@@ -370,51 +342,28 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
                         // Dropdown Pekerjaan
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Pekerjaan Saat Ini',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF64748B),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
+                              _buildLabel('Pekerjaan Saat Ini'),
                               DropdownButtonFormField<String>(
+                                value: _pekerjaanPilih,
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
                                 decoration: InputDecoration(
-                                  prefixIcon: const Icon(
-                                    Icons.work_outline,
-                                    color: primaryColor,
-                                  ),
+                                  prefixIcon: Icon(Icons.work_outline, color: _primaryBlue.withOpacity(0.7), size: 22),
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  fillColor: _inputBg,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryBlue, width: 1.5)),
                                 ),
-                                initialValue: _pekerjaanPilih,
-                                hint: const Text('Pilih Pekerjaan'),
-                                items:
-                                    [
-                                          'Ibu Rumah Tangga',
-                                          'Karyawan Swasta',
-                                          'PNS / BUMN',
-                                          'Wiraswasta',
-                                          'Lainnya',
-                                        ]
-                                        .map(
-                                          (String val) => DropdownMenuItem(
-                                            value: val,
-                                            child: Text(val),
-                                          ),
-                                        )
-                                        .toList(),
-                                onChanged: (val) =>
-                                    setState(() => _pekerjaanPilih = val),
+                                hint: Text('Pilih Pekerjaan', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                                style: TextStyle(color: _bgHitam, fontSize: 14),
+                                items: ['Ibu Rumah Tangga', 'Karyawan Swasta', 'PNS / BUMN', 'Wiraswasta', 'Lainnya'].map((String val) {
+                                  return DropdownMenuItem(value: val, child: Text(val));
+                                }).toList(),
+                                onChanged: (val) => setState(() => _pekerjaanPilih = val),
                               ),
                             ],
                           ),
@@ -432,27 +381,24 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _updateProfil,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
+                        backgroundColor: _primaryBlue,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 0,
+                        elevation: 2,
                       ),
                       child: _isSaving
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF1E293B),
-                                strokeWidth: 2,
-                              ),
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                             )
                           : const Text(
                               'Simpan Perubahan',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
+                                color: Colors.white,
                               ),
                             ),
                     ),
@@ -464,48 +410,60 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: _outlineColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputGroup(
     String label,
     TextEditingController ctrl,
     IconData icon,
     bool isReadOnly, {
     TextInputType type = TextInputType.text,
+    String hint = '',
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 8),
+          _buildLabel(label),
           TextFormField(
             controller: ctrl,
             keyboardType: type,
             readOnly: isReadOnly,
             style: TextStyle(
-              color: isReadOnly ? Colors.grey.shade500 : Colors.black87,
+              color: isReadOnly ? _outlineColor : _bgHitam,
+              fontSize: 14,
             ),
             decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
               prefixIcon: Icon(
                 icon,
-                color: isReadOnly
-                    ? Colors.grey.shade600
-                    : const Color(0xFF1E293B),
+                color: isReadOnly ? Colors.grey.shade400 : _primaryBlue.withOpacity(0.7),
+                size: 22,
               ),
               filled: true,
-              fillColor: isReadOnly
-                  ? Colors.grey.shade200
-                  : Colors.grey.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
+              fillColor: isReadOnly ? Colors.grey.shade100 : _inputBg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _primaryBlue, width: 1.5),
               ),
             ),
           ),
