@@ -287,22 +287,9 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       final responseBody = jsonDecode(responsePrediksi.body);
       final mapData = responseBody['data'] ?? responseBody;
 
-      // Mengambil status prediksi dari key 'status' sesuai dengan perubahan di backend
-      final status = mapData['status'] as Map<String, dynamic>? ?? {};
-      final hasilHA = (status['ha'] ?? 'Unknown').toString();
-      final hasilWA = (status['wa'] ?? 'Unknown').toString();
-      final hasilWH = (status['wh'] ?? 'Unknown').toString();
-      final hasilHFA = (status['hfa'] ?? 'Unknown').toString();
-      
-      // Mengambil probabilitas — coba dari top-level dulu, lalu dari nested prediksi
-      double hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 0.0;
-      if (hasilProbabilitas == 0.0) {
-        final dynamic prediksiObj = mapData['prediksi'];
-        if (prediksiObj is Map<String, dynamic>) {
-          final stuntingHa = prediksiObj['stunting_ha'] as Map<String, dynamic>? ?? {};
-          hasilProbabilitas = (stuntingHa['probabilitas'] as num?)?.toDouble() ?? 0.0;
-        }
-      }
+      // ML v3: Backend sekarang mengembalikan single hasil_prediksi (bukan 4 status)
+      final hasilPrediksi = (mapData['hasil_prediksi'] ?? 'Unknown').toString();
+      final hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 1.0;
 
       if (mounted) {
         Navigator.pushAndRemoveUntil(
@@ -310,16 +297,13 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
           MaterialPageRoute(
             builder: (context) => HasilPrediksiPage(
               namaAnak: _selectedAnak['nama_anak'] ?? 'Anak',
-              keteranganHA: hasilHA,
-              keteranganWA: hasilWA,
-              keteranganWH: hasilWH,
-              keteranganHFA: hasilHFA,
+              hasilPrediksi: hasilPrediksi,
               probabilitas: hasilProbabilitas,
               beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
               tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
-          (Route<dynamic> route) => route.isFirst, // Sesuai permintaan untuk clear stack ke beranda
+          (Route<dynamic> route) => route.isFirst,
         );
       }
     } catch (e) {
@@ -436,22 +420,9 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       final responseBodyPrediksi = jsonDecode(responsePrediksi.body);
       final mapData = responseBodyPrediksi['data'] ?? responseBodyPrediksi;
 
-      // Mengambil status prediksi dari key 'status' sesuai dengan perubahan di backend
-      final status = mapData['status'] as Map<String, dynamic>? ?? {};
-      final hasilHA = (status['ha'] ?? 'Unknown').toString();
-      final hasilWA = (status['wa'] ?? 'Unknown').toString();
-      final hasilWH = (status['wh'] ?? 'Unknown').toString();
-      final hasilHFA = (status['hfa'] ?? 'Unknown').toString();
-      
-      // Mengambil probabilitas — coba dari top-level dulu, lalu dari nested prediksi
-      double hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 0.0;
-      if (hasilProbabilitas == 0.0) {
-        final dynamic prediksiObj = mapData['prediksi'];
-        if (prediksiObj is Map<String, dynamic>) {
-          final stuntingHa = prediksiObj['stunting_ha'] as Map<String, dynamic>? ?? {};
-          hasilProbabilitas = (stuntingHa['probabilitas'] as num?)?.toDouble() ?? 0.0;
-        }
-      }
+      // ML v3: Backend mengembalikan single hasil_prediksi
+      final hasilPrediksi = (mapData['hasil_prediksi'] ?? 'Unknown').toString();
+      final hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 1.0;
 
       if (mounted) {
         Navigator.pushAndRemoveUntil(
@@ -459,16 +430,13 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
           MaterialPageRoute(
             builder: (context) => HasilPrediksiPage(
               namaAnak: _namaAnakCtrl.text,
-              keteranganHA: hasilHA,
-              keteranganWA: hasilWA,
-              keteranganWH: hasilWH,
-              keteranganHFA: hasilHFA,
+              hasilPrediksi: hasilPrediksi,
               probabilitas: hasilProbabilitas,
               beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
               tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
-          (Route<dynamic> route) => route.isFirst, // Tetap simpan HomePage di stack
+          (Route<dynamic> route) => route.isFirst,
         );
       }
     } catch (e) {

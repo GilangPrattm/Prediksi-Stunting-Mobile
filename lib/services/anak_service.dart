@@ -36,6 +36,33 @@ class AnakService {
     }
   }
 
+  // Simpan Data Ibu ke collection profil_ibus
+  Future<bool> simpanDataIbu(Map<String, dynamic> dataIbu) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/profil-ibu'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(dataIbu),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        print('Gagal simpan data ibu: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error simpan data ibu: $e');
+      return false;
+    }
+  }
+
   // Menerbangkan data Edit (PUT) ke Server
   Future<bool> editData(String idAnak, Map<String, dynamic> dataAnak) async {
     try {
@@ -43,7 +70,7 @@ class AnakService {
       String? token = prefs.getString('token');
 
       final response = await http.put(
-        Uri.parse('$baseUrl/anak/$idAnak'), 
+        Uri.parse('$baseUrl/anak/$idAnak'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

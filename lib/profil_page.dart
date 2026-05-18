@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'config/api_config.dart';
 import 'edit_profil_page.dart';
 import 'login_page.dart';
+import 'bantuan_page.dart';
+import 'ubah_sandi_page.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -21,6 +23,12 @@ class _ProfilPageState extends State<ProfilPage> {
   String _telepon = '-';
   String _namaAnak = '-';
   bool _isLoading = true;
+
+  // --- WARNA TEMA KONSISTEN ---
+  final Color _primaryBlue = const Color(0xFF1978E5);
+  final Color _bgHitam = const Color(0xFF0B1C30);
+  final Color _surfaceBg = const Color(0xFFF8F9FF);
+  final Color _outlineColor = const Color(0xFF717785);
 
   @override
   void initState() {
@@ -114,22 +122,26 @@ class _ProfilPageState extends State<ProfilPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Keluar dari Aplikasi?'),
-        content: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Keluar dari Aplikasi?',
+          style: TextStyle(color: _bgHitam, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
           'Anda harus login kembali untuk mengakses data gizi.',
+          style: TextStyle(color: _outlineColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
+            child: Text('Batal', style: TextStyle(color: _outlineColor)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(dialogContext); // Tutup dialog menggunakan context dialog
+              Navigator.pop(dialogContext);
               SharedPreferences prefs = await SharedPreferences.getInstance();
               String? token = prefs.getString('token');
 
-              // Cabut token di server terlebih dahulu
               if (token != null) {
                 try {
                   await http.post(
@@ -140,23 +152,23 @@ class _ProfilPageState extends State<ProfilPage> {
                     },
                   );
                 } catch (e) {
-                  // Jika server tidak bisa dihubungi, tetap lanjutkan logout lokal
                   debugPrint('Logout API error (ignored): $e');
                 }
               }
 
-              // Baru hapus semua data lokal
               await prefs.clear();
               if (!mounted) return;
-              
-              // Gunakan context utama dari StatefulWidget, bukan dialogContext
+
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (c) => const LoginPage()),
                 (r) => false,
               );
             },
-            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -164,153 +176,42 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   void _ubahKataSandi() {
-    TextEditingController sandiCtrl = TextEditingController();
-    bool isSaving = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UbahSandiPage(namaLengkap: _nama, email: _email),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                top: 20,
-                left: 20,
-                right: 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Ubah Kata Sandi',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: sandiCtrl,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      hintText: 'Masukkan Kata Sandi Baru',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isSaving
-                          ? null
-                          : () async {
-                              if (sandiCtrl.text.isEmpty) return;
-                              setModalState(() => isSaving = true);
-
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-                              String? token = prefs.getString('token');
-
-                              try {
-                                await http.put(
-                                  Uri.parse('$_baseUrl/profil'),
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'Bearer $token',
-                                  },
-                                  body: jsonEncode({
-                                    'name': _nama,
-                                    'email': _email,
-                                    'password': sandiCtrl.text,
-                                  }), // Menggunakan endpoint profil yg ada
-                                );
-                                if (!context.mounted) return;
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Kata sandi berhasil diubah!',
-                                    ),
-                                    backgroundColor: Color(0xFFBFDBFE),
-                                  ),
-                                );
-                              } catch (e) {
-                                setModalState(() => isSaving = false);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Gagal mengubah sandi.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF009688),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Simpan Sandi Baru',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF009688); // Teal Color
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _surfaceBg,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Center(child: CircularProgressIndicator(color: _primaryBlue))
           : RefreshIndicator(
               onRefresh: _fetchProfil,
-              color: primaryColor,
+              color: _primaryBlue,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // HEADER TEAL & KARTU PROFIL OVERLAP
+                    // HEADER BIRU & KARTU PROFIL OVERLAP
                     Stack(
                       clipBehavior: Clip.none,
                       alignment: Alignment.topCenter,
                       children: [
-                        // Latar Hijau Tosca Atas
+                        // Latar Biru Gradient Atas
                         Container(
                           height: 220,
                           width: double.infinity,
                           decoration: const BoxDecoration(
-                            color: primaryColor,
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF1978E5), Color(0xFF005AB4)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.only(
                               bottomLeft: Radius.circular(40),
                               bottomRight: Radius.circular(40),
@@ -318,8 +219,8 @@ class _ProfilPageState extends State<ProfilPage> {
                           ),
                           padding: const EdgeInsets.only(
                             top: 60,
-                            left: 20,
-                            right: 20,
+                            left: 24,
+                            right: 24,
                           ),
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -329,13 +230,14 @@ class _ProfilPageState extends State<ProfilPage> {
                                 'Akun Saya',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                               Icon(
                                 Icons.settings_outlined,
                                 color: Colors.white,
+                                size: 26,
                               ),
                             ],
                           ),
@@ -357,9 +259,9 @@ class _ProfilPageState extends State<ProfilPage> {
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
+                                color: _primaryBlue.withOpacity(0.08),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
@@ -369,48 +271,65 @@ class _ProfilPageState extends State<ProfilPage> {
                               Stack(
                                 alignment: Alignment.bottomRight,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 40,
-                                    backgroundColor: Colors.grey.shade200,
-                                    child: Text(
-                                      _inisial,
-                                      style: const TextStyle(
-                                        color: Color(0xFF009688),
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: _surfaceBg,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFD6E3FF),
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        _inisial,
+                                        style: TextStyle(
+                                          color: _primaryBlue,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                        ),
                                       ),
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: primaryColor,
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: _primaryBlue,
                                       shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
                                     ),
                                     child: const Icon(
-                                      Icons.person_outline,
+                                      Icons.edit_outlined,
                                       color: Colors.white,
-                                      size: 16,
+                                      size: 14,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 15),
+                              const SizedBox(height: 16),
 
                               // Nama dan Deskripsi
                               Text(
                                 'Bunda $_nama',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E293B),
+                                  color: _bgHitam,
                                 ),
                               ),
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 4),
                               ShaderMask(
                                 shaderCallback: (Rect bounds) {
                                   return const LinearGradient(
-                                    colors: [Color(0xFF2196F3), Color(0xFF009688)],
+                                    colors: [
+                                      Color(0xFF60A5FA),
+                                      Color(0xFF1978E5),
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ).createShader(bounds);
@@ -420,42 +339,45 @@ class _ProfilPageState extends State<ProfilPage> {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
 
-                              const SizedBox(height: 25),
+                              const SizedBox(height: 24),
 
                               // Kontak Email & Telepon
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.email_outlined,
-                                    color: Color(0xFF1E293B),
+                                    color: _primaryBlue,
                                     size: 18,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Text(
                                     _email.isNotEmpty ? _email : '-',
-                                    style: const TextStyle(
-                                      color: Color(0xFF475569),
+                                    style: TextStyle(
+                                      color: _outlineColor,
                                       fontSize: 13,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  const SizedBox(width: 15),
-                                  const Icon(
+                                  const SizedBox(width: 16),
+                                  Icon(
                                     Icons.phone_outlined,
-                                    color: Color(0xFF1E293B),
+                                    color: _primaryBlue,
                                     size: 18,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       _telepon.isNotEmpty ? _telepon : '-',
-                                      style: const TextStyle(
-                                        color: Color(0xFF475569),
+                                      style: TextStyle(
+                                        color: _outlineColor,
                                         fontSize: 13,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -496,7 +418,14 @@ class _ProfilPageState extends State<ProfilPage> {
                           _buildMenuItem(
                             'Bantuan & FAQ',
                             Icons.help_outline,
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const BantuanPage(),
+                                ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 20),
@@ -508,24 +437,27 @@ class _ProfilPageState extends State<ProfilPage> {
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(15),
+                                color: const Color(0xFFFFF1F2), // Rose-50
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: const Color(0xFFFFE4E6),
+                                ), // Rose-100
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.logout,
-                                    color: Colors.red,
+                                    Icons.logout_rounded,
+                                    color: Color(0xFFE11D48), // Rose-600
                                     size: 20,
                                   ),
                                   SizedBox(width: 10),
                                   Text(
                                     'Keluar Akun',
                                     style: TextStyle(
-                                      color: Colors.red,
+                                      color: Color(0xFFE11D48),
                                       fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ],
@@ -551,16 +483,16 @@ class _ProfilPageState extends State<ProfilPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
+              color: _primaryBlue.withOpacity(0.04),
+              blurRadius: 15,
               offset: const Offset(0, 4),
             ),
           ],
@@ -568,96 +500,32 @@ class _ProfilPageState extends State<ProfilPage> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFBFDBFE).withValues(alpha: 0.2),
+                color: _primaryBlue.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF1E293B), size: 20),
+              child: Icon(icon, color: _primaryBlue, size: 20),
             ),
-            const SizedBox(width: 15),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF1E293B),
+                style: TextStyle(
+                  color: _bgHitam,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey.shade400,
+              size: 24,
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0, left: 5.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey.shade600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuCard(
-    BuildContext context, {
-    required List<Widget> children,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 25),
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(height: 1, color: Colors.grey.shade100, indent: 50);
-  }
-
-  Widget _buildListTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.black87, size: 20),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      onTap: onTap,
     );
   }
 }

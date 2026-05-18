@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Pastikan meng-import file custom_bottom_nav yang baru kita buat
+import 'custom_bottom_nav.dart';
+
 import 'tambah_anak_page.dart';
 import 'profil_page.dart';
 import 'edit_profil_page.dart';
@@ -32,6 +35,14 @@ class _HomePageState extends State<HomePage> {
   bool _isProfilIbuLengkap = true;
   List<dynamic> _daftarHistoriPrediksi = [];
   bool _isLoadingHistori = true;
+
+  // --- WARNA TEMA ---
+  final Color _bgHitam = const Color(0xFF0B1C30);
+  final Color _primaryBlue = const Color(0xFF1978E5);
+  final Color _primaryFixed = const Color(0xFFD6E3FF);
+  final Color _surfaceBg = const Color(0xFFF8F9FF);
+  final Color _outlineColor = const Color(0xFF717785);
+  final Color _surfaceContainer = const Color(0xFFE5EEFF);
 
   @override
   void initState() {
@@ -91,7 +102,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
 
-      // Ambil histori prediksi dari server
       final resHistori = await http.get(
         Uri.parse('$_baseUrl/prediksi'),
         headers: {'Authorization': 'Bearer $token'},
@@ -99,8 +109,7 @@ class _HomePageState extends State<HomePage> {
       if (resHistori.statusCode == 200) {
         final dataHistori = jsonDecode(resHistori.body);
         setState(() {
-          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed
-              .toList(); // Terbaru di atas
+          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed.toList();
           _isLoadingHistori = false;
         });
       } else {
@@ -122,8 +131,7 @@ class _HomePageState extends State<HomePage> {
     try {
       DateTime birthDate = DateTime.parse(tglLahirStr);
       DateTime today = DateTime.now();
-      int months =
-          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
+      int months = (today.year - birthDate.year) * 12 + today.month - birthDate.month;
       if (today.day < birthDate.day) {
         months--;
       }
@@ -131,388 +139,213 @@ class _HomePageState extends State<HomePage> {
       if (months < 12) return '$months Bulan';
       int years = months ~/ 12;
       int remainingMonths = months % 12;
-      return remainingMonths == 0
-          ? '$years Tahun'
-          : '$years Tahun $remainingMonths Bulan';
+      return remainingMonths == 0 ? '$years Tahun' : '$years Tahun $remainingMonths Bulan';
     } catch (e) {
       return '-';
     }
   }
 
-  int _dapatkanUmurBulan(String? tglLahirStr) {
-    if (tglLahirStr == null || tglLahirStr.isEmpty) return 0;
-    try {
-      DateTime birthDate = DateTime.parse(tglLahirStr);
-      DateTime today = DateTime.now();
-      int months =
-          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
-      if (today.day < birthDate.day) {
-        months--;
-      }
-      return months < 0 ? 0 : months;
-    } catch (e) {
-      return 0;
+  void _onBottomNavTapped(int index) {
+    if (index == 2) {
+      // Tombol tengah di-intercept langsung buka halaman Cek Stunting
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CekStuntingPage(
+            isIbuDataComplete: _isProfilIbuLengkap,
+            daftarAnak: _daftarAnak,
+          ),
+        ),
+      );
+    } else {
+      setState(() => _selectedIndex = index);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // List layar dengan 5 elemen.
-    // Index 1 (Cek Stunting) di-intercept → tidak render halaman, hanya buka bottom sheet.
-    // Riwayat Prediksi diakses via ikon di header beranda.
     final List<Widget> pages = [
       _buildBeranda(),
-      RiwayatPage(daftarAnak: _daftarAnak), // Index 1: Riwayat Prediksi
-      const SizedBox(), // Index 2: Prediksi (Di-intercept)
-      _buildEdukasiResep(), // Index 3: MPASI
-      const ProfilPage(), // Index 4: Akun Saya
+      RiwayatPage(daftarAnak: _daftarAnak),
+      const SizedBox(), // Index 2 di-intercept
+      _buildEdukasiResep(),
+      const ProfilPage(),
     ];
 
-    const Color primaryColor = Color(0xFFBFDBFE);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _surfaceBg,
       body: pages[_selectedIndex],
+      floatingActionButton: _selectedIndex == 0 ? _buildFAB() : null,
+      extendBody: true,
+      // Memanggil file Footer terpisah yang baru dibuat
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _selectedIndex,
+        onTap: _onBottomNavTapped,
+      ),
+    );
+  }
 
-      floatingActionButton: FloatingActionButton(
+  Widget _buildFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(20),
+          bottomLeft: Radius.circular(15),
+          bottomRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryBlue.withOpacity(0.4),
+            blurRadius: 15,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ChatbotPage()),
           );
         },
-        backgroundColor: const Color(0xFFBFDBFE),
-        child: const Icon(Icons.smart_toy, color: Color(0xFF1E293B)),
-      ),
-      extendBody: true,
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+        backgroundColor: _primaryBlue,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(15),
+            bottomRight: Radius.circular(30),
+          ),
+          side: BorderSide(color: Color(0xFFD6E3FF), width: 2),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.smart_toy, color: Colors.white, size: 30),
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: const Color(0xFF009688), // Teal
-            unselectedItemColor: Colors.grey.shade400,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 10,
-            ),
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            onTap: (index) {
-              if (index == 2) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CekStuntingPage(
-                      isIbuDataComplete: _isProfilIbuLengkap,
-                      daftarAnak: _daftarAnak,
-                    ),
-                  ),
-                );
-              } else {
-                setState(() => _selectedIndex = index);
-              }
-            },
-            items: [
-              _buildNavItem(Icons.home_outlined, Icons.home_rounded, 'Beranda'),
-              _buildNavItem(
-                Icons.history_outlined,
-                Icons.history_rounded,
-                'Riwayat',
-              ),
-              BottomNavigationBarItem(
-                icon: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF009688),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                label: '',
-              ),
-              _buildNavItem(
-                Icons.restaurant_menu_outlined,
-                Icons.restaurant_menu_rounded,
-                'MPASI',
-              ),
-              _buildNavItem(
-                Icons.person_outline_rounded,
-                Icons.person_rounded,
-                'Profil',
-              ),
-            ],
-          ),
-        ),
       ),
-    );
-  }
-
-  BottomNavigationBarItem _buildNavItem(
-    IconData icon,
-    IconData activeIcon,
-    String label,
-  ) {
-    return BottomNavigationBarItem(
-      icon: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Icon(icon, size: 24),
-      ),
-      activeIcon: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Icon(activeIcon, size: 24),
-      ),
-      label: label,
     );
   }
 
   // ==== WIDGET TAB 0: BERANDA ====
   Widget _buildBeranda() {
-    bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty;
+    // Kondisi apakah data siap ditampilkan
+    bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
+    // Kondisi apakah user ini benar-benar baru (data ibu belum lengkap atau belum ada data anak)
+    bool isUserBaru = !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
 
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: _fetchProfilDanAnak,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER TEAL + KARTU ANAK (layout tanpa Stack overflow)
-              Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.topCenter,
-                children: [
-                  // Header background
-                  _buildHeaderSesuaiGambar(),
+    return RefreshIndicator(
+      onRefresh: _fetchProfilDanAnak,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // HERO HEADER
+            _buildHeroHeader(),
 
-                  // Kartu anak mengambang di bawah header
-                  Positioned(
-                    top: 110,
-                    left: 20,
-                    right: 20,
-                    child: _isLoadingAnak
-                        ? const SizedBox(
-                            height: 120,
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        : (hasData
-                              ? _buildKartuAnakSesuaiGambar()
-                              : _buildKartuAnakKosong()),
-                  ),
-                ],
-              ),
-
-              // Spacer agar konten di bawah tidak bertabrakan dengan kartu yang mengambang
-              const SizedBox(height: 160),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            // MAIN CONTENT CANVAS
+            Transform.translate(
+              offset: const Offset(0, -30),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Banner Waktunya Cek Gizi!
-                    if (hasData)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 25),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFBFDBFE), // Light Blue
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0xFFBFDBFE).withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Waktunya Cek Gizi!',
-                              style: TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Pastikan tumbuh kembang si kecil sesuai dengan usianya.',
-                              style: TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 15),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CekStuntingPage(
-                                      isIbuDataComplete: _isProfilIbuLengkap,
-                                      daftarAnak: _daftarAnak,
-                                    ),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1E293B),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 10,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Cek Gizi Sekarang',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(width: 5),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 18,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // KARTU TAMPILAN ATAS
+                    if (_isLoadingAnak)
+                      const Center(child: CircularProgressIndicator())
+                    else if (isUserBaru)
+                      _buildKartuUserBaru() // Tampil jika user baru
+                    else
+                      _buildProgressHero(), // Tampil jika data lengkap
 
-                    // Tips Area
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Tips Hari Ini',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        Text(
-                          'Lihat Semua',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 24),
 
-                    _buildTipsCardLama(
-                      'Pentingnya Sayur Hijau untuk Anak',
-                      'Oleh Dr. Kila • 3 min read',
-                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTipsCardLama(
-                      'Pola Tidur yang Memicu Pertumbuhan',
-                      'Oleh Dr. Kila • 5 min read',
-                      'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400',
-                    ),
-                    const SizedBox(height: 50),
+                    // AKSI CEPAT
+                    if (hasData) _buildAksiCepat(),
+
+                    const SizedBox(height: 24),
+
+                    // TIPS / INSPIRASI HARIAN
+                    _buildTipsHarian(),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // --- KOMPONEN HEADER BARU ---
-  Widget _buildHeaderSesuaiGambar() {
+  Widget _buildHeroHeader() {
     String displayNama = _namaBunda.isNotEmpty ? _namaBunda : 'Bunda';
 
     return Container(
       width: double.infinity,
-      height: 210,
-      padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 60),
       decoration: const BoxDecoration(
-        color: Color(0xFFBFDBFE), // Solid Light Blue
+        gradient: LinearGradient(
+          colors: [Color(0xFFEAF1FF), Color(0xFFD6E3FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(40),
-          bottomRight: Radius.circular(40),
+          bottomLeft: Radius.circular(60),
+          bottomRight: Radius.circular(30),
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // FIX OVERFLOW 1: Membungkus Row Avatar & Text ke dalam Expanded
           Expanded(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar Mini
                 Container(
-                  width: 45,
-                  height: 45,
+                  width: 55,
+                  height: 55,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Colors.white.withOpacity(0.6),
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.8)),
                   ),
-                  child: const Icon(Icons.person, color: Colors.grey),
+                  child: Icon(Icons.person, color: _primaryBlue, size: 30),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 16),
+                // FIX OVERFLOW 1: Membungkus Column Teks ke dalam Expanded
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Selamat Pagi,',
-                        style: TextStyle(
-                          color: Color(0xFF1E293B).withOpacity(0.7),
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: _bgHitam.withOpacity(0.7), fontSize: 14, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        'Halo, Bunda $displayNama!',
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                        'Halo, $displayNama!',
+                        style: TextStyle(color: _bgHitam, fontSize: 24, fontWeight: FontWeight.w800),
+                        overflow: TextOverflow.ellipsis, // Menambahkan pemotong teks
+                        maxLines: 1, // Maksimal 1 baris
                       ),
                     ],
                   ),
@@ -521,1004 +354,525 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(width: 10),
-          // Notifikasi Bell
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: Color(0xFF1E293B).withOpacity(0.1),
+              color: Colors.white.withOpacity(0.6),
               shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.8)),
             ),
-            child: const Icon(
-              Icons.notifications_none,
-              color: Color(0xFF1E293B),
-              size: 20,
-            ),
+            child: Icon(Icons.notifications_outlined, color: _primaryBlue, size: 24),
           ),
         ],
       ),
     );
   }
 
-  // --- KOMPONEN KARTU ANAK BARU MURNI DARI GAMBAR ---
-  Widget _buildKartuAnakSesuaiGambar() {
-    var anakAktif = _daftarAnak[_anakTerpilihIndeks];
-
-    String namaMurni = anakAktif['nama_anak'] ?? 'Tanpa Nama';
-    String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
-    String tglPeriksaAsli = anakAktif['tgl_pemeriksaan'] != null
-        ? 'Terakhir diperbarui: ${anakAktif['tgl_pemeriksaan']}'
-        : 'Belum pernah dicek';
-    String tinggiBadanAsli = anakAktif['tinggi_badan']?.toString() ?? '-';
-    String beratBadanAsli = anakAktif['berat_badan']?.toString() ?? '-';
-    // Case-insensitive check untuk semua variasi penulisan jenis kelamin
-    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '')
-        .toString()
-        .toLowerCase();
-    final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
-    String kelamin = isLakiLaki ? 'LAKI-LAKI' : 'PEREMPUAN';
-    Color warnaBadgeKelamin = isLakiLaki
-        ? const Color(0xFFDBEAFE) // Biru muda untuk laki-laki
-        : const Color(0xFFFCE7F3); // Pink muda untuk perempuan
-    Color warnaTeksBadge = isLakiLaki
-        ? const Color(0xFF1D4ED8)
-        : const Color(0xFF9D174D);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Nama + Badge Kelamin
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        namaMurni,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: warnaBadgeKelamin,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        kelamin,
-                        style: TextStyle(
-                          color: warnaTeksBadge,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Navigasi Anak: hanya tampil jika ada lebih dari 1 anak
-              if (_daftarAnak.length > 1)
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _anakTerpilihIndeks =
-                          (_anakTerpilihIndeks + 1) % _daftarAnak.length;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBFDBFE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${_anakTerpilihIndeks + 1}/${_daftarAnak.length}',
-                          style: const TextStyle(
-                            color: Color(0xFF1E293B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF1E293B),
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text(
-            tglPeriksaAsli,
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-          ),
-
-          const SizedBox(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatBox(Icons.calendar_today_outlined, 'USIA', teksUsia),
-              _buildStatBox(
-                Icons.monitor_weight_outlined,
-                'BERAT',
-                '$beratBadanAsli kg',
-                iconColor: Colors.orange,
-              ),
-              _buildStatBox(
-                Icons.height_outlined,
-                'TINGGI',
-                '$tinggiBadanAsli cm',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBox(
-    IconData icon,
-    String title,
-    String value, {
-    Color iconColor = const Color(0xFF1E293B),
-  }) {
-    return Container(
-      width: 90,
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF1E293B),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKartuAnakKosong() {
+  // WIDGET KONDISI USER BARU (Diminta oleh Gilang)
+  Widget _buildKartuUserBaru() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: _primaryBlue.withOpacity(0.1),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         children: [
-          Icon(Icons.child_care, size: 40, color: Colors.grey.shade300),
-          const SizedBox(height: 15),
-          const Text(
-            'Lengkapi Data Diri Anda dan Buah Hati Anda',
-            style: TextStyle(
-              color: Color(0xFF1E293B),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: _surfaceContainer, shape: BoxShape.circle),
+            child: Icon(Icons.family_restroom, size: 40, color: _primaryBlue),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Selamat Datang di Stunt-Check!',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _bgHitam, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Mohon lengkapi data diri dan data anak Anda untuk memulai pantau tumbuh kembang.',
+          Text(
+            'Mari mulai perjalanan memantau tumbuh kembang si Kecil dengan melengkapi data berikut.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            style: TextStyle(color: _outlineColor, fontSize: 13, height: 1.4),
           ),
-          const SizedBox(height: 15),
-          ElevatedButton(
-            onPressed: () {
-              if (!_isProfilIbuLengkap) {
-                _tampilkanDialogLengkapiProfil();
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TambahAnakPage(),
-                  ),
-                ).then((_) => _fetchProfilDanAnak());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBFDBFE),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-            child: const Text(
-              'Lengkapi Data',
-              style: TextStyle(
-                color: Color(0xFF1E293B),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _tampilkanDialogLengkapiProfil() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          contentPadding: const EdgeInsets.all(25),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_off_outlined,
-                  color: Colors.orange,
-                  size: 50,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Tunggu Sebentar, Bunda!',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Untuk memastikan akurasi pantauan gizi si kecil, pastikan data diri Bunda sudah diisi dengan lengkap ya.',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 25),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfilPage(),
-                      ),
-                    ).then((_) => _fetchProfilDanAnak());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBFDBFE),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Text(
-                    'Lengkapi Profil Sekarang',
-                    style: TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Nanti Saja',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTipsCardLama(String title, String subtitle, String imgUrl) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imgUrl,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey[300],
-                child: const Icon(
-                  Icons.image_not_supported,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==== WIDGET TAB 1: RIWAYAT PREDIKSI ====
-  Widget _buildPantauTumbuhKembang() {
-    // Hitung statistik ringkas
-    int jmlNormal = _daftarHistoriPrediksi
-        .where(
-          (e) => (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
-            'normal',
-          ),
-        )
-        .length;
-    int jmlBerisiko = _daftarHistoriPrediksi
-        .where(
-          (e) => (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
-            'berisiko',
-          ),
-        )
-        .length;
-    int jmlStunting = _daftarHistoriPrediksi
-        .where(
-          (e) =>
-              (e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
-                'stunting',
-              ) &&
-              !(e['hasil_prediksi'] ?? '').toString().toLowerCase().contains(
-                'berisiko',
-              ),
-        )
-        .length;
-
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFBFDBFE),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Riwayat Prediksi',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Analisis stunting oleh Kila AI · ${_daftarHistoriPrediksi.length} pemeriksaan',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: const Color(0xFF1E293B).withOpacity(0.7),
-                  ),
-                ),
-                if (_daftarHistoriPrediksi.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _buildStatChip(
-                        'Normal',
-                        jmlNormal,
-                        const Color(0xFF10B981),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildStatChip(
-                        'Berisiko',
-                        jmlBerisiko,
-                        const Color(0xFFF59E0B),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildStatChip(
-                        'Stunting',
-                        jmlStunting,
-                        const Color(0xFFEF4444),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Isi Riwayat
-          Expanded(
-            child: _isLoadingHistori
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFBFDBFE)),
-                  )
-                : _daftarHistoriPrediksi.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.history_toggle_off,
-                          size: 60,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 15),
-                        const Text(
-                          'Belum Ada Riwayat Prediksi',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Lakukan Cek Stunting terlebih dahulu\nuntuk melihat hasil analisis AI di sini.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _fetchProfilDanAnak,
-                    color: const Color(0xFFBFDBFE),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: _daftarHistoriPrediksi.length,
-                      itemBuilder: (context, index) {
-                        return _buildKartuHistori(
-                          _daftarHistoriPrediksi[index],
-                        );
-                      },
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String label, int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Text(
-        '$label: $count',
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildKartuHistori(Map<String, dynamic> item) {
-    final String hasil = item['hasil_prediksi'] ?? 'Tidak diketahui';
-    final String namaAnak = item['anak'] is Map
-        ? (item['anak']['nama_anak'] ?? '-')
-        : '-';
-    final String idAnak = item['anak'] is Map
-        ? (item['anak']['_id'] ?? item['anak']['id'] ?? '')
-        : (item['id_anak'] ?? '');
-    final String tanggal =
-        item['tanggal_prediksi'] ?? item['created_at'] ?? '-';
-    final double probabilitas =
-        ((item['probabilitas']) as num?)?.toDouble() ?? 0.0;
-
-    Color warnaBg;
-    Color warnaText;
-    IconData ikon;
-
-    final String hasilLower = hasil.toLowerCase();
-    if (hasilLower.contains('normal') &&
-        !hasilLower.contains('berisiko') &&
-        !hasilLower.contains('stunting')) {
-      warnaBg = const Color(0xFFDCFAE6);
-      warnaText = const Color(0xFF166534);
-      ikon = Icons.check_circle_rounded;
-    } else if (hasilLower.contains('berisiko') ||
-        hasilLower.contains('resiko') ||
-        hasilLower.contains('risiko')) {
-      warnaBg = const Color(0xFFFFF7CD);
-      warnaText = const Color(0xFF92400E);
-      ikon = Icons.warning_amber_rounded;
-    } else {
-      warnaBg = const Color(0xFFFFE4E4);
-      warnaText = const Color(0xFF991B1B);
-      ikon = Icons.dangerous_rounded;
-    }
-
-    // Cari data anak lengkap dari _daftarAnak berdasarkan idAnak
-    final anakData = _daftarAnak.firstWhere(
-      (a) => (a['_id'] ?? a['id'] ?? '').toString() == idAnak,
-      orElse: () => <String, dynamic>{},
-    );
-
-    return GestureDetector(
-      onTap: () {
-        // Tap kartu → lihat detail hasil prediksi
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HasilPrediksiPage(
-              namaAnak: namaAnak,
-              keteranganHA: hasil,
-              probabilitas: probabilitas,
-              beratBadan: (anakData['berat_badan'] as num?)?.toDouble(),
-              tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
-              keteranganWA: item['keterangan_wa'] ?? '',
-              keteranganWH: item['keterangan_wh'] ?? '',
-              keteranganHFA: item['keterangan_hfa'] ?? '',
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Baris atas: ikon + nama + badge
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: warnaBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(ikon, color: warnaText, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        namaAnak,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        tanggal.toString().split('T').first,
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: warnaBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    hasil,
-                    style: TextStyle(
-                      color: warnaText,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Probabilitas bar
-            if (probabilitas > 0) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Text(
-                    'Keyakinan AI:',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: probabilitas,
-                        minHeight: 6,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(warnaText),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${(probabilitas * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: warnaText,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            // Tombol Prediksi Ulang (hanya jika data anak ditemukan)
-            if (idAnak.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
-                  // Buka CekStuntingPage dengan anak ini sudah terpilih
-                  final List<dynamic> anakList = anakData.isNotEmpty
-                      ? [anakData]
-                      : _daftarAnak
-                            .where(
-                              (a) =>
-                                  (a['_id'] ?? a['id'] ?? '').toString() ==
-                                  idAnak,
-                            )
-                            .toList();
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // Logika pengarahan halaman untuk User Baru
+                if (!_isProfilIbuLengkap) {
+                  // Jika Profil Ibu belum lengkap, arahkan ke EditProfilPage
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CekStuntingPage(
-                        isIbuDataComplete: true,
-                        daftarAnak: anakList.isNotEmpty
-                            ? anakList
-                            : _daftarAnak,
-                      ),
-                    ),
+                    context, 
+                    MaterialPageRoute(builder: (context) => const EditProfilPage())
                   ).then((_) => _fetchProfilDanAnak());
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                } else {
+                  // Jika Ibu sudah lengkap tapi Anak kosong, arahkan ke TambahAnakPage
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const TambahAnakPage())
+                  ).then((_) => _fetchProfilDanAnak());
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryBlue,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Lengkapi Data Sekarang',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressHero() {
+    var anakAktif = _daftarAnak[_anakTerpilihIndeks];
+    String namaMurni = anakAktif['nama_anak'] ?? 'Tanpa Nama';
+    String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
+    String tinggiBadan = anakAktif['tinggi_badan']?.toString() ?? '-';
+    String tglPeriksa = anakAktif['tgl_pemeriksaan'] ?? 'Belum dicek';
+    
+    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '').toString().toLowerCase();
+    final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
+    String kelamin = isLakiLaki ? 'Laki-Laki' : 'Perempuan';
+
+    String statusGizi = anakAktif['status_gizi'] ?? 'Normal';
+    Color ringColor = statusGizi.toLowerCase() == 'normal' ? _primaryBlue : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.all(20), // Padding dikurangi sedikit agar lega
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryBlue.withOpacity(0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.refresh_rounded, size: 15, color: warnaText),
-                    const SizedBox(width: 6),
                     Text(
-                      'Prediksi Ulang',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: warnaText,
-                      ),
+                      namaMurni,
+                      style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$kelamin • $teksUsia',
+                      style: TextStyle(color: _primaryBlue, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==== WIDGET TAB 2: RESEP ====
-  Widget _buildEdukasiResep() {
-    bool adaAnakBeresiko = false;
-    if (_daftarAnak.isNotEmpty) {
-      String statusGiziRaw =
-          _daftarAnak[_anakTerpilihIndeks]['status_gizi'] ??
-          ((_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] != null &&
-                  (_daftarAnak[_anakTerpilihIndeks]['tinggi_badan'] as num) <
-                      65)
-              ? 'Beresiko'
-              : 'Baik');
-      adaAnakBeresiko =
-          statusGiziRaw.toLowerCase().contains('beresiko') ||
-          statusGiziRaw.toLowerCase().contains('kurang');
-    }
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Menu Nutrisi & MPASI',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              adaAnakBeresiko
-                  ? 'Difilter Cerdas: Mode Kejar Tumbuh (Tinggi Protein)'
-                  : 'Rekomendasi harian kaya nutrisi',
-              style: TextStyle(
-                fontSize: 13,
-                color: adaAnakBeresiko ? Colors.orange[800] : Colors.grey,
-                fontWeight: adaAnakBeresiko
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  if (adaAnakBeresiko)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 15),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.orange.shade200),
+              if (_daftarAnak.length > 1)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _anakTerpilihIndeks = (_anakTerpilihIndeks + 1) % _daftarAnak.length;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _primaryBlue.withOpacity(0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(10),
+                        bottomLeft: Radius.circular(10),
+                        bottomRight: Radius.circular(20),
                       ),
-                      child: const Row(
+                    ),
+                    child: Icon(Icons.swap_horiz_rounded, color: _primaryBlue),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _primaryBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.verified, color: _primaryBlue),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          Row(
+            children: [
+              SizedBox(
+                width: 110,
+                height: 110,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: 1.0,
+                      strokeWidth: 8,
+                      color: _surfaceContainer,
+                    ),
+                    CircularProgressIndicator(
+                      value: 0.75, 
+                      strokeWidth: 8,
+                      strokeCap: StrokeCap.round,
+                      color: ringColor,
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.auto_awesome,
-                            color: Colors.orange,
-                            size: 20,
+                          Text(
+                            statusGizi,
+                            style: TextStyle(color: _bgHitam, fontSize: 18, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'AI merekomendasikan resep di bawah ini khusus untuk mempercepat pertumbuhan.',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 12,
-                              ),
-                            ),
+                          Text(
+                            'Status Gizi',
+                            style: TextStyle(color: _outlineColor, fontSize: 11),
                           ),
                         ],
                       ),
                     ),
-
-                  ..._daftarResep.map(
-                    (resep) => Padding(
-                      padding: const EdgeInsets.only(bottom: 15),
-                      child: _buildRecipeCardLama(
-                        resep['nama_makanan'] ?? 'Menu Bergizi',
-                        'Bagus (AI)',
-                        'Cek Detail',
-                        '-',
-                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+                  ],
+                ),
+              ),
+              
+              // FIX OVERFLOW 2: Kurangi gap dan beri Expanded pada Metric
+              const SizedBox(width: 12), // Dikurangi dari 24 ke 12
+              
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _surfaceContainer),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40, // Diperkecil sedikit
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: _primaryFixed,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.height, color: _primaryBlue, size: 20),
                       ),
-                    ),
+                      const SizedBox(width: 8), // Gap diperkecil
+                      
+                      // FIX OVERFLOW 2: Teks dibungkus dengan Expanded
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TINGGI BADAN',
+                              style: TextStyle(color: _outlineColor, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                              overflow: TextOverflow.ellipsis, // Perlindungan tambahan
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                // Karena angka tinggi badan butuh prioritas, beri fleksibilitas
+                                Flexible(
+                                  child: Text(
+                                    tinggiBadan,
+                                    style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text('cm', style: TextStyle(color: _outlineColor, fontSize: 12)),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  if (_daftarResep.isEmpty)
-                    _buildRecipeCardLama(
-                      'Bubur Hati Ayam Lodeh (Contoh)',
-                      'Bagus (AI)',
-                      '150 Kkal',
-                      '20 mnt',
-                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecipeCardLama(
-    String title,
-    String rating,
-    String cals,
-    String time,
-    String imgUrl,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imgUrl,
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
-                width: 70,
-                height: 70,
-                color: Colors.grey[300],
-                child: const Icon(
-                  Icons.image_not_supported,
-                  color: Colors.grey,
                 ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.local_fire_department,
-                      color: Colors.orange,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      cals,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(width: 15),
-                    const Icon(Icons.timer, color: Colors.grey, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+
+          const SizedBox(height: 20),
+          Text(
+            'Pembaruan terakhir: $tglPeriksa',
+            style: TextStyle(color: _outlineColor, fontSize: 12),
           ),
         ],
       ),
     );
+  }
+
+  // --- WIDGET BAWAH (Sama dengan sebelumnya) ---
+  Widget _buildAksiCepat() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AKSI CEPAT',
+          style: TextStyle(color: _bgHitam, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CekStuntingPage(
+                        isIbuDataComplete: _isProfilIbuLengkap,
+                        daftarAnak: _daftarAnak,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 150,
+                  height: 120,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _primaryBlue,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(color: _primaryBlue.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Icon(Icons.add_chart_rounded, color: Colors.white, size: 28),
+                      const Text(
+                        'Cek Gizi\nSekarang',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700, height: 1.2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 3),
+                child: Container(
+                  width: 150,
+                  height: 120,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: _surfaceContainer),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: _primaryFixed, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.restaurant_menu, color: _primaryBlue, size: 20),
+                      ),
+                      Text(
+                        'Rekomendasi\nResep',
+                        style: TextStyle(color: _bgHitam, fontSize: 14, fontWeight: FontWeight.w700, height: 1.2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTipsHarian() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Inspirasi Harian', style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text('Tips untuk tumbuh kembang optimal', style: TextStyle(color: _outlineColor, fontSize: 14)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+              ),
+              child: Icon(Icons.arrow_forward_rounded, color: _primaryBlue, size: 20),
+            )
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                height: 260,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                          image: DecorationImage(
+                            image: NetworkImage('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Container(
+                            margin: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(8)),
+                            child: Text('Gizi', style: TextStyle(color: _primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pentingnya Sayur Hijau untuk Tumbuh Kembang', style: TextStyle(color: _bgHitam, fontSize: 14, fontWeight: FontWeight.bold, height: 1.3)),
+                          const SizedBox(height: 8),
+                          Text('Dr. Kila • 3 min', style: TextStyle(color: _outlineColor, fontSize: 11)),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _primaryFixed,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.7), borderRadius: BorderRadius.circular(12)),
+                          child: Icon(Icons.bedtime, color: _primaryBlue, size: 20),
+                        ),
+                        const SizedBox(height: 12),
+                        Text('Jadwal Tidur Ideal Balita', style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Bidan Sari • 5 min', style: TextStyle(color: _bgHitam.withOpacity(0.6), fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 80,
+                          decoration: const BoxDecoration(
+                            borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                            image: DecorationImage(
+                              image: NetworkImage('https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text('Cara Atasi Anak Susah Makan', style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold)),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _buildEdukasiResep() {
+    return const Center(child: Text('Halaman MPASI (Belum dimodifikasi)'));
   }
 }

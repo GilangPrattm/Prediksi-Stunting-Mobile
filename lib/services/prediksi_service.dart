@@ -70,11 +70,13 @@ class PrediksiService {
         final data = responseBody['data'] as Map<String, dynamic>;
         return {
           'sukses': true,
-          'hasil': data['hasil'] ?? 'Tidak diketahui',
+          'hasil': data['hasil_prediksi'] ?? 'Tidak diketahui',
+          'labelSistem': data['label_sistem'] ?? '',
           'probabilitas': (data['probabilitas'] as num?)?.toDouble() ?? 0.0,
           'namaAnak': data['anak'] ?? 'Anak',
           'idPrediksi': data['id_prediksi']?.toString() ?? '',
-          'detailAi': data['detail_ai'],
+          'rekomendasiTeks': data['rekomendasi_teks'] ?? '',
+          'rekomendasiTerstruktur': data['rekomendasi_terstruktur'] ?? [],
         };
       } else if (response.statusCode == 503) {
         // ML Server tidak aktif
