@@ -239,8 +239,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
             child: Row(
               children: [
                 _buildSuggestionPill('Apa MPASI yang bagus untuk usia 8 bulan?'),
-                _buildSuggestionPill('Berapa berat ideal anak 1 tahun?'),
-                _buildSuggestionPill('Cara menaikkan berat badan balita'),
+                _buildSuggestionPill('Berapa tinggi ideal anak 1 tahun?'),
+                _buildSuggestionPill('Tanda anak mengalami stunting'),
               ],
             ),
           ),

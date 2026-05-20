@@ -4,7 +4,6 @@ class HasilPrediksiPage extends StatelessWidget {
   final String namaAnak;
   final String hasilPrediksi; // e.g. "Normal", "Berisiko", "Stunting"
   final double probabilitas; // 0.0 - 1.0
-  final double? beratBadan;
   final double? tinggiBadan;
 
   const HasilPrediksiPage({
@@ -12,7 +11,6 @@ class HasilPrediksiPage extends StatelessWidget {
     required this.namaAnak,
     required this.hasilPrediksi,
     required this.probabilitas,
-    this.beratBadan,
     this.tinggiBadan,
   });
 
@@ -305,28 +303,6 @@ class HasilPrediksiPage extends StatelessWidget {
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _primaryContainer.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.monitor_weight_outlined, color: _primaryColor),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '${beratBadan ?? '-'} kg',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _onSurface),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Berat', style: TextStyle(fontSize: 12, color: _outline)),
-                  ],
-                ),
-              ),
-              Container(width: 1, height: 60, color: _surfaceLow), // Divider vertikal
               Expanded(
                 child: Column(
                   children: [

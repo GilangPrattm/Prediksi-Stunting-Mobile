@@ -44,9 +44,7 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
   final TextEditingController _tglLahirAnakController = TextEditingController();
   final TextEditingController _tglPemeriksaanController =
       TextEditingController();
-  final TextEditingController _bbLahirController = TextEditingController();
   final TextEditingController _tbLahirController = TextEditingController();
-  final TextEditingController _bbSekarangController = TextEditingController();
   final TextEditingController _tbSekarangController = TextEditingController();
   String? _jenisKelaminAnak;
 
@@ -191,9 +189,7 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
       'jenis_kelamin': _jenisKelaminAnak,
       'tgl_lahir': _tglLahirAnakController.text,
       'tgl_pemeriksaan': _tglPemeriksaanController.text,
-      'bb_lahir': double.tryParse(_bbLahirController.text) ?? 0,
       'tb_lahir': double.tryParse(_tbLahirController.text) ?? 0,
-      'berat_badan': double.tryParse(_bbSekarangController.text) ?? 0,
       'tinggi_badan': double.tryParse(_tbSekarangController.text) ?? 0,
     };
 
@@ -554,21 +550,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('BB Lahir (kg)'),
-                    _buildCustomTextField(
-                      _bbLahirController,
-                      'Misal: 3.2',
-                      Icons.monitor_weight_outlined,
-                      inputType: TextInputType.number,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
                     _buildLabel('TB Lahir (cm)'),
                     _buildCustomTextField(
                       _tbLahirController,
@@ -615,21 +596,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
 
               Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('BB Saat Ini (kg)'),
-                        _buildCustomTextField(
-                          _bbSekarangController,
-                          'Misal: 10.5',
-                          Icons.scale_outlined,
-                          inputType: TextInputType.number,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 15),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
