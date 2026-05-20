@@ -19,7 +19,6 @@ class PrediksiService {
   ///
   /// [idAnak]     - MongoDB _id dari anak
   /// [umurBulan]  - Umur anak dalam satuan bulan
-  /// [beratBadan] - Berat badan dalam kg (misal: 11.5)
   /// [tinggiBadan]- Tinggi badan dalam cm (misal: 85.0)
   ///
   /// Returns map berisi:
@@ -34,7 +33,6 @@ class PrediksiService {
   Future<Map<String, dynamic>> hitungPrediksi({
     required String idAnak,
     required int umurBulan,
-    required double beratBadan,
     required double tinggiBadan,
   }) async {
     final String? token = await _getToken();
@@ -42,7 +40,6 @@ class PrediksiService {
     final Map<String, dynamic> payload = {
       'id_anak': idAnak,
       'umur_bulan': umurBulan,
-      'berat_badan': beratBadan,
       'tinggi_badan': tinggiBadan,
     };
 

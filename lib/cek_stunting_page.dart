@@ -49,9 +49,7 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
   final TextEditingController _tglLahirAnakCtrl = TextEditingController();
   final TextEditingController _umurAnakCtrl = TextEditingController();
   final TextEditingController _tglPemeriksaanCtrl = TextEditingController();
-  final TextEditingController _bbLahirCtrl = TextEditingController();
   final TextEditingController _tbLahirCtrl = TextEditingController();
-  final TextEditingController _beratCtrl = TextEditingController();
   final TextEditingController _tinggiCtrl = TextEditingController();
   String? _jenisKelaminAnak;
   DateTime? _tglLahirAnak;
@@ -86,9 +84,7 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
     _tglLahirAnakCtrl.dispose();
     _umurAnakCtrl.dispose();
     _tglPemeriksaanCtrl.dispose();
-    _bbLahirCtrl.dispose();
     _tbLahirCtrl.dispose();
-    _beratCtrl.dispose();
     _tinggiCtrl.dispose();
     super.dispose();
   }
@@ -262,8 +258,6 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
         'id_anak': idAnak,
         'tinggi_badan':
             double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
-        'berat_badan':
-            double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
         'umur_bulan': _totalBulanAnak,
       };
 
@@ -299,7 +293,6 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
               namaAnak: _selectedAnak['nama_anak'] ?? 'Anak',
               hasilPrediksi: hasilPrediksi,
               probabilitas: hasilProbabilitas,
-              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
               tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
@@ -371,12 +364,8 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
           'jenis_kelamin': _jenisKelaminAnak,
           'tgl_lahir': tglLahirAnakFormatted,
           'tgl_pemeriksaan': tglPemeriksaanFormatted,
-          'bb_lahir':
-              double.tryParse(_bbLahirCtrl.text.replaceAll(',', '.')) ?? 0,
           'tb_lahir':
               double.tryParse(_tbLahirCtrl.text.replaceAll(',', '.')) ?? 0,
-          'berat_badan':
-              double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
           'tinggi_badan':
               double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
         }),
@@ -404,8 +393,6 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
           'id_anak': idAnak,
           'tinggi_badan':
               double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
-          'berat_badan':
-              double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
           'umur_bulan': _totalBulanAnak,
         }),
       );
@@ -432,7 +419,6 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
               namaAnak: _namaAnakCtrl.text,
               hasilPrediksi: hasilPrediksi,
               probabilitas: hasilProbabilitas,
-              beratBadan: double.tryParse(_beratCtrl.text.replaceAll(',', '.')) ?? 0,
               tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
             ),
           ),
@@ -614,34 +600,15 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _beratCtrl,
-                          label: 'BB Saat Ini (kg)',
-                          hint: 'Misal: 9.5',
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (v) =>
-                              _validateNumber(v, 'Berat Saat Ini'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _tinggiCtrl,
-                          label: 'TB Saat Ini (cm)',
-                          hint: 'Misal: 75',
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (v) =>
-                              _validateNumber(v, 'Tinggi Saat Ini'),
-                        ),
-                      ),
-                    ],
+                  _buildTextField(
+                    controller: _tinggiCtrl,
+                    label: 'TB Saat Ini (cm)',
+                    hint: 'Misal: 75',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: (v) =>
+                        _validateNumber(v, 'Tinggi Saat Ini'),
                   ),
                 ],
               ),
@@ -925,32 +892,14 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _bbLahirCtrl,
-                    label: 'BB Lahir (kg)',
-                    hint: 'Misal: 3.2',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) => _validateNumber(v, 'BB Lahir'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _tbLahirCtrl,
-                    label: 'TB Lahir (cm)',
-                    hint: 'Misal: 49',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) => _validateNumber(v, 'TB Lahir'),
-                  ),
-                ),
-              ],
+            _buildTextField(
+              controller: _tbLahirCtrl,
+              label: 'TB Lahir (cm)',
+              hint: 'Misal: 49',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (v) => _validateNumber(v, 'TB Lahir'),
             ),
             const SizedBox(height: 16),
 
@@ -963,32 +912,14 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _beratCtrl,
-                    label: 'BB Saat Ini (kg)',
-                    hint: 'Misal: 9.5',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) => _validateNumber(v, 'Berat Saat Ini'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _tinggiCtrl,
-                    label: 'TB Saat Ini (cm)',
-                    hint: 'Misal: 75',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) => _validateNumber(v, 'Tinggi Saat Ini'),
-                  ),
-                ),
-              ],
+            _buildTextField(
+              controller: _tinggiCtrl,
+              label: 'TB Saat Ini (cm)',
+              hint: 'Misal: 75',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (v) => _validateNumber(v, 'Tinggi Saat Ini'),
             ),
             const SizedBox(height: 32),
           ],

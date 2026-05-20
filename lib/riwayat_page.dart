@@ -16,23 +16,20 @@ class RiwayatPage extends StatefulWidget {
 }
 
 class _RiwayatPageState extends State<RiwayatPage> {
-  // Warna sesuai tema HTML
-  final Color _primary = const Color(0xFF006A63);
-  final Color _primaryContainer = const Color(0xFF4DB6AC);
-  final Color _onPrimaryContainer = const Color(0xFF00433F);
-  final Color _surfaceLowest = const Color(0xFFFFFFFF);
-  final Color _surfaceContainer = const Color(0xFFECEEEE);
-  final Color _onSurface = const Color(0xFF191C1D);
-  final Color _onSurfaceVariant = const Color(0xFF3D4947);
-  final Color _outline = const Color(0xFF6D7A77);
-  final Color _bg = const Color(0xFFF5F7F7);
+  // --- TEMA WARNA BIRU KONSISTEN ---
+  final Color _primaryBlue = const Color(0xFF1978E5);
+  final Color _primaryLight = const Color(0xFFD6E3FF);
+  final Color _bgHitam = const Color(0xFF0B1C30);
+  final Color _surfaceBg = const Color(0xFFF8F9FF);
+  final Color _outlineColor = const Color(0xFF717785);
+  final Color _cardBg = Colors.white;
 
   List<dynamic> _riwayatPrediksi = [];
   List<dynamic> _dataPengukuran = [];
   late Future<Map<String, dynamic>> _futureData;
   String? _anakTerpilihId;
   String _anakTerpilihNama = 'Semua Anak';
-  int _tabGrafik = 0; // 0 = Berat Badan, 1 = Tinggi Badan
+
 
   @override
   void initState() {
@@ -88,21 +85,23 @@ class _RiwayatPageState extends State<RiwayatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _surfaceBg,
       appBar: AppBar(
-        backgroundColor: _surfaceLowest,
+        backgroundColor: _surfaceBg,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
         title: Row(
           children: [
-            Icon(Icons.child_care, color: _primary),
+            Icon(Icons.child_care, color: _primaryBlue, size: 28),
             const SizedBox(width: 8),
             Text(
               'Stunt-Check',
               style: TextStyle(
-                color: _primary,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
+                color: _primaryBlue,
+                fontWeight: FontWeight.w900,
+                fontSize: 22,
+                letterSpacing: -0.5,
               ),
             ),
           ],
@@ -112,12 +111,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
         future: _futureData,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: _primary));
+            return Center(child: CircularProgressIndicator(color: _primaryBlue));
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
-                "Gagal memuat data",
-                style: TextStyle(color: _onSurfaceVariant),
+                "Gagal memuat data dari server",
+                style: TextStyle(color: _outlineColor),
               ),
             );
           }
@@ -130,9 +129,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 _futureData = _fetchAllData();
               });
             },
-            color: _primary,
+            color: _primaryBlue,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -140,8 +140,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   const SizedBox(height: 24),
                   if (hasData) ...[
                     _buildGrafikCard(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 30),
                     _buildRiwayatList(),
+                    const SizedBox(height: 40), // Spacer bawah
                   ] else ...[
                     _buildKosong(),
                   ],
@@ -159,29 +160,30 @@ class _RiwayatPageState extends State<RiwayatPage> {
   // ==========================================
 
   Widget _buildHeaderInfo() {
-    // Hitung statistik singkat
     int normal = 0;
-    int stunting = 0;
-    int pendek = 0;
+    int tinggi = 0;
+    int stunting = 0; 
+    int sangatStunting = 0;
     
     for (var r in _riwayatPrediksi) {
       String status = (r['status'] ?? '').toString().toLowerCase();
-      if (status == 'normal') normal++;
-      else if (status.contains('sangat pendek') || status == 'stunting') stunting++;
-      else if (status.contains('pendek') || status == 'berisiko') pendek++;
+      if (status.contains('sangat stunting') || status.contains('sangat pendek') || status.contains('severely stunted')) sangatStunting++;
+      else if (status.contains('stunting') || status.contains('pendek')) stunting++;
+      else if (status.contains('tinggi')) tinggi++;
+      else normal++;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Riwayat & Tumbuh Kembang',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: _bgHitam, height: 1.2),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           '$_anakTerpilihNama · ${_riwayatPrediksi.length} pemeriksaan',
-          style: TextStyle(fontSize: 14, color: _onSurfaceVariant),
+          style: TextStyle(fontSize: 14, color: _outlineColor),
         ),
         const SizedBox(height: 16),
         if (_riwayatPrediksi.isNotEmpty)
@@ -189,9 +191,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildStatBadge('Normal: $normal', const Color(0xFF136964), const Color(0xFFA4F0E9)),
-              _buildStatBadge('Sangat Pendek: $stunting', const Color(0xFF93000A), const Color(0xFFFFDAD6)),
-              _buildStatBadge('Pendek: $pendek', const Color(0xFF994500), const Color(0xFFFFDCC2)),
+              _buildStatBadge('Normal: $normal', const Color(0xFF10B981), const Color(0xFFD1FAE5)),
+              if (tinggi > 0)
+                _buildStatBadge('Tinggi: $tinggi', _primaryBlue, _primaryLight),
+              _buildStatBadge('Stunting: $stunting', const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
+              _buildStatBadge('Sangat Stunting: $sangatStunting', const Color(0xFFE11D48), const Color(0xFFFFE4E6)),
             ],
           ),
       ],
@@ -200,10 +204,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Widget _buildStatBadge(String text, Color textColor, Color bgColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -227,13 +232,13 @@ class _RiwayatPageState extends State<RiwayatPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _surfaceLowest,
-        borderRadius: BorderRadius.circular(16),
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: _primary.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: _primaryBlue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -247,34 +252,21 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Grafik Tumbuh Kembang',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _onSurface)),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _bgHitam)),
+                  const SizedBox(height: 2),
                   Text(
-                      _tabGrafik == 0
-                          ? 'Berat Badan (kg) per Bulan'
-                          : 'Tinggi Badan (cm) per Bulan',
-                      style: TextStyle(fontSize: 12, color: _onSurfaceVariant)),
+                      'Tinggi Badan (cm) per Bulan',
+                      style: TextStyle(fontSize: 12, color: _outlineColor)),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: _surfaceContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    _buildTabButton('BB', 0),
-                    _buildTabButton('TB', 1),
-                  ],
-                ),
-              ),
+
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
           SizedBox(
             height: 250,
             child: _dataPengukuran.isEmpty
-                ? const Center(child: Text('Data tidak cukup untuk grafik'))
+                ? Center(child: Text('Data tidak cukup untuk grafik', style: TextStyle(color: _outlineColor)))
                 : _buildFlChart(),
           ),
         ],
@@ -282,31 +274,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  Widget _buildTabButton(String label, int index) {
-    final isActive = _tabGrafik == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _tabGrafik = index;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? _primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isActive ? Colors.white : _onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildFlChart() {
     List<FlSpot> spots = [];
@@ -316,9 +284,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     for (int i = 0; i < _dataPengukuran.length; i++) {
       var item = _dataPengukuran[i];
-      double val = _tabGrafik == 0
-          ? double.tryParse(item['berat'].toString()) ?? 0
-          : double.tryParse(item['tinggi'].toString()) ?? 0;
+      double val = double.tryParse(item['tinggi'].toString()) ?? 0;
       
       if (val > maxY) maxY = val;
       if (val < minY && val > 0) minY = val;
@@ -326,8 +292,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
       spots.add(FlSpot(i.toDouble(), val));
     }
 
-    // Add padding to Y axis
-    maxY = maxY + (maxY * 0.2);
+    maxY = maxY + (maxY * 0.1);
     minY = minY > 5 ? minY - 5 : 0;
 
     return LineChart(
@@ -335,10 +300,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: _tabGrafik == 0 ? 5 : 20,
+          horizontalInterval: 20,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: _surfaceContainer,
+            color: Colors.grey.shade200,
             strokeWidth: 1,
+            dashArray: [5, 5],
           ),
         ),
         titlesData: FlTitlesData(
@@ -348,12 +314,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: _tabGrafik == 0 ? 5 : 20,
+              interval: 20,
               reservedSize: 30,
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: TextStyle(color: _onSurfaceVariant, fontSize: 10),
+                  style: TextStyle(color: _outlineColor, fontSize: 11),
                 );
               },
             ),
@@ -368,7 +334,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       'Bln ${value.toInt() + 1}',
-                      style: TextStyle(color: _onSurfaceVariant, fontSize: 10),
+                      style: TextStyle(color: _outlineColor, fontSize: 11),
                     ),
                   );
                 }
@@ -386,17 +352,24 @@ class _RiwayatPageState extends State<RiwayatPage> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: _primaryContainer,
+            color: _primaryBlue,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
-                  FlDotCirclePainter(radius: 4, color: _primary, strokeWidth: 0),
+                  FlDotCirclePainter(radius: 4, color: _primaryBlue, strokeWidth: 2, strokeColor: Colors.white),
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: _primaryContainer.withValues(alpha: 0.1),
+              gradient: LinearGradient(
+                colors: [
+                  _primaryBlue.withOpacity(0.3),
+                  _primaryBlue.withOpacity(0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ],
@@ -412,12 +385,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Data Riwayat Prediksi',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _onSurface)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _bgHitam)),
             Text('${_riwayatPrediksi.length} data',
-                style: TextStyle(fontSize: 12, color: _outline)),
+                style: TextStyle(fontSize: 13, color: _outlineColor, fontWeight: FontWeight.w600)),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -438,113 +411,178 @@ class _RiwayatPageState extends State<RiwayatPage> {
     String rawStatus = (data['status'] ?? 'Normal').toString();
     String status = rawStatus;
     
-    // Tentukan warna berdasarkan status
-    Color badgeColor = const Color(0xFF136964); // Teal/Normal
-    Color badgeBg = const Color(0xFFA4F0E9);
+    // Tema Warna berdasarkan Status Gizi (Sesuai HTML + Blue Theme)
+    Color badgeColor = const Color(0xFF10B981); // Emerald/Normal
+    Color badgeBg = const Color(0xFFD1FAE5);
     IconData icon = Icons.check_circle;
 
-    if (rawStatus.toLowerCase().contains('sangat pendek') || rawStatus.toLowerCase() == 'stunting') {
-      badgeColor = const Color(0xFFBA1A1A); // Red
-      badgeBg = const Color(0xFFFFDAD6);
+    if (rawStatus.toLowerCase().contains('sangat stunting') || rawStatus.toLowerCase().contains('sangat pendek') || rawStatus.toLowerCase().contains('severely')) {
+      badgeColor = const Color(0xFFE11D48); // Rose
+      badgeBg = const Color(0xFFFFE4E6);
       icon = Icons.report;
-      status = "Stunting";
-    } else if (rawStatus.toLowerCase().contains('pendek') || rawStatus.toLowerCase() == 'berisiko') {
-      badgeColor = const Color(0xFF994500); // Orange
-      badgeBg = const Color(0xFFFFDCC2);
+      status = "Sangat Stunting";
+    } else if (rawStatus.toLowerCase().contains('stunting') || rawStatus.toLowerCase().contains('pendek') || rawStatus.toLowerCase().contains('berisiko')) {
+      badgeColor = const Color(0xFFF59E0B); // Amber
+      badgeBg = const Color(0xFFFEF3C7);
       icon = Icons.warning;
-      status = "Berisiko";
+      status = "Stunting";
+    } else if (rawStatus.toLowerCase().contains('tinggi')) {
+      badgeColor = _primaryBlue; // Blue
+      badgeBg = _primaryLight;
+      icon = Icons.height;
+      status = "Tinggi";
     }
 
     double probabilitas = double.tryParse(data['probabilitas']?.toString() ?? '1') ?? 1.0;
     int probPersen = (probabilitas * 100).toInt();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surfaceLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _surfaceContainer),
-        boxShadow: [
-          BoxShadow(
-            color: _primary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: _surfaceContainer, shape: BoxShape.circle),
-                child: Center(child: Text('$urutan', style: TextStyle(fontWeight: FontWeight.bold, color: _onSurface))),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_anakTerpilihNama, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _onSurface)),
-                    Text(tglStr, style: TextStyle(fontSize: 12, color: _onSurfaceVariant)),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(20)),
-                child: Row(
-                  children: [
-                    Icon(icon, size: 14, color: badgeColor),
-                    const SizedBox(width: 4),
-                    Text(status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: badgeColor)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Keyakinan AI:', style: TextStyle(fontSize: 12, color: _onSurfaceVariant)),
-              Text('$probPersen%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _primary)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: probabilitas,
-              minHeight: 8,
-              backgroundColor: _surfaceContainer,
-              valueColor: AlwaysStoppedAnimation<Color>(_primary),
+    // Data Anak untuk diteruskan ke CekStuntingPage/HasilPrediksiPage
+    final String idAnak = data['id_anak']?.toString() ?? _anakTerpilihId ?? '';
+    final anakData = widget.daftarAnak.firstWhere(
+      (a) => (a['_id'] ?? a['id'] ?? '').toString() == idAnak,
+      orElse: () => <String, dynamic>{},
+    );
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HasilPrediksiPage(
+              namaAnak: _anakTerpilihNama,
+              hasilPrediksi: status,
+              probabilitas: probabilitas,
+
+              tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
             ),
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CekStuntingPage()),
-              );
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: _primaryBlue.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.refresh, size: 18, color: _primary),
-                const SizedBox(width: 6),
-                Text('Prediksi Ulang', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _primary)),
+                // Nomor Urut (Mirip desain HTML)
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(color: _surfaceBg, shape: BoxShape.circle),
+                  child: Center(
+                    child: Text(
+                      '$urutan', 
+                      style: TextStyle(fontWeight: FontWeight.w900, color: _bgHitam, fontSize: 16)
+                    )
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _anakTerpilihNama, 
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _bgHitam, height: 1.2)
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        tglStr, 
+                        style: TextStyle(fontSize: 12, color: _outlineColor, fontWeight: FontWeight.w600)
+                      ),
+                    ],
+                  ),
+                ),
+                // Badge Status
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 14, color: badgeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        status, 
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeColor)
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            
+            // AI Confidence Bar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Keyakinan AI:', style: TextStyle(fontSize: 13, color: _outlineColor, fontWeight: FontWeight.w600)),
+                Text('$probPersen%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _primaryBlue)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: probabilitas,
+                minHeight: 8,
+                backgroundColor: _surfaceBg,
+                valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 16),
+            
+            // Tombol Prediksi Ulang
+            GestureDetector(
+              onTap: () {
+                final List<dynamic> anakList = anakData.isNotEmpty
+                    ? [anakData]
+                    : widget.daftarAnak;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CekStuntingPage(
+                      isIbuDataComplete: true,
+                      daftarAnak: anakList,
+                    ),
+                  ),
+                ).then((_) {
+                  setState(() {
+                    _futureData = _fetchAllData();
+                  });
+                });
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.refresh_rounded, size: 18, color: _primaryBlue),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Prediksi Ulang', 
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _primaryBlue)
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -555,12 +593,19 @@ class _RiwayatPageState extends State<RiwayatPage> {
       padding: const EdgeInsets.symmetric(vertical: 60),
       child: Column(
         children: [
-          Icon(Icons.history_toggle_off, size: 80, color: _outline.withValues(alpha: 0.3)),
-          const SizedBox(height: 16),
-          Text('Belum Ada Riwayat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _onSurface)),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: _primaryBlue.withOpacity(0.1), blurRadius: 20)]),
+            child: Icon(Icons.history_toggle_off_rounded, size: 60, color: _outlineColor.withOpacity(0.5)),
+          ),
+          const SizedBox(height: 20),
+          Text('Belum Ada Riwayat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _bgHitam)),
           const SizedBox(height: 8),
-          Text('Lakukan Cek Stunting untuk melihat\nhasil analisis AI di sini.',
-              textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: _onSurfaceVariant)),
+          Text(
+            'Lakukan Cek Gizi pada Beranda untuk melihat\nhasil analisis AI di sini.',
+            textAlign: TextAlign.center, 
+            style: TextStyle(fontSize: 14, color: _outlineColor, height: 1.5)
+          ),
         ],
       ),
     );

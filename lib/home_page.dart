@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Pastikan meng-import file custom_bottom_nav yang baru kita buat
+import 'mpasi_page.dart';
 import 'custom_bottom_nav.dart';
-
 import 'tambah_anak_page.dart';
 import 'profil_page.dart';
 import 'edit_profil_page.dart';
@@ -168,8 +166,12 @@ class _HomePageState extends State<HomePage> {
       _buildBeranda(),
       RiwayatPage(daftarAnak: _daftarAnak),
       const SizedBox(), // Index 2 di-intercept
-      _buildEdukasiResep(),
-      const ProfilPage(),
+  MpasiPage(
+        daftarAnak: _daftarAnak,
+        anakTerpilihIndeks: _anakTerpilihIndeks,
+        daftarResep: _daftarResep,
+      ),
+      const ProfilPage(), 
     ];
 
     return Scaffold(
@@ -870,9 +872,5 @@ class _HomePageState extends State<HomePage> {
         )
       ],
     );
-  }
-
-  Widget _buildEdukasiResep() {
-    return const Center(child: Text('Halaman MPASI (Belum dimodifikasi)'));
   }
 }

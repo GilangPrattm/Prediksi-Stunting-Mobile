@@ -16,9 +16,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
   final TextEditingController _tglLahirController = TextEditingController();
   final TextEditingController _tglPemeriksaanController =
       TextEditingController();
-  final TextEditingController _bbLahirController = TextEditingController();
   final TextEditingController _tbLahirController = TextEditingController();
-  final TextEditingController _bbSekarangController = TextEditingController();
   final TextEditingController _tbSekarangController = TextEditingController();
 
   String? _jenisKelamin;
@@ -33,10 +31,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
     _namaOrtuController.text = widget.dataAnak['nama_ortu'] ?? '';
     _tglLahirController.text = widget.dataAnak['tgl_lahir'] ?? '';
     _tglPemeriksaanController.text = widget.dataAnak['tgl_pemeriksaan'] ?? '';
-    _bbLahirController.text = widget.dataAnak['bb_lahir']?.toString() ?? '';
     _tbLahirController.text = widget.dataAnak['tb_lahir']?.toString() ?? '';
-    _bbSekarangController.text =
-        widget.dataAnak['berat_badan']?.toString() ?? '';
     _tbSekarangController.text =
         widget.dataAnak['tinggi_badan']?.toString() ?? '';
 
@@ -101,9 +96,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
       'jenis_kelamin': _jenisKelamin,
       'tgl_lahir': _tglLahirController.text,
       'tgl_pemeriksaan': _tglPemeriksaanController.text,
-      'bb_lahir': double.tryParse(_bbLahirController.text) ?? 0,
       'tb_lahir': double.tryParse(_tbLahirController.text) ?? 0,
-      'berat_badan': double.tryParse(_bbSekarangController.text) ?? 0,
       'tinggi_badan': double.tryParse(_tbSekarangController.text) ?? 0,
     };
 
@@ -239,69 +232,29 @@ class _EditAnakPageState extends State<EditAnakPage> {
               context,
             ),
 
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('BB Lahir (kg)'),
-                      _buildTextField(
-                        _bbLahirController,
-                        'Misal: 3.2',
-                        TextInputType.number,
-                      ),
-                    ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('TB Lahir (cm)'),
+                  _buildTextField(
+                    _tbLahirController,
+                    'Misal: 49',
+                    TextInputType.number,
                   ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('TB Lahir (cm)'),
-                      _buildTextField(
-                        _tbLahirController,
-                        'Misal: 49',
-                        TextInputType.number,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('BB Saat Ini (kg)'),
-                      _buildTextField(
-                        _bbSekarangController,
-                        'Misal: 10.5',
-                        TextInputType.number,
-                      ),
-                    ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel('TB Saat Ini (cm)'),
+                  _buildTextField(
+                    _tbSekarangController,
+                    'Misal: 82',
+                    TextInputType.number,
                   ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('TB Saat Ini (cm)'),
-                      _buildTextField(
-                        _tbSekarangController,
-                        'Misal: 82',
-                        TextInputType.number,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
             const SizedBox(height: 30),
             SizedBox(

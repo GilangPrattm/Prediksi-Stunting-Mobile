@@ -35,15 +35,15 @@ class CekGiziForm extends StatefulWidget {
 }
 
 class _CekGiziFormState extends State<CekGiziForm> {
-  final TextEditingController _bbController = TextEditingController();
+
   final TextEditingController _tbController = TextEditingController();
   bool _isLoading = false;
 
   // Fungsi utama: Panggil PrediksiService (memanggil ML melalui Laravel)
   void _simpanDanPrediksi() async {
-    if (_bbController.text.isEmpty || _tbController.text.isEmpty) {
+    if (_tbController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berat dan Tinggi Badan Wajib Diisi!'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Tinggi Badan Wajib Diisi!'), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -54,14 +54,12 @@ class _CekGiziFormState extends State<CekGiziForm> {
     final String idAnak = widget.anakAktif['_id']?.toString() ??
         widget.anakAktif['id']?.toString() ?? '';
 
-    final double beratBadan  = double.tryParse(_bbController.text) ?? 0;
     final double tinggiBadan = double.tryParse(_tbController.text) ?? 0;
 
     // Panggil service yang sudah terhubung ke Laravel → Python ML
     final result = await PrediksiService().hitungPrediksi(
       idAnak:      idAnak,
       umurBulan:   widget.umurBulan,
-      beratBadan:  beratBadan,
       tinggiBadan: tinggiBadan,
     );
 
@@ -222,7 +220,7 @@ class _CekGiziFormState extends State<CekGiziForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Berapa Angka Timbangan ${widget.anakAktif['nama_anak']} Hari Ini?',
+                      'Berapa Hasil Pengukuran ${widget.anakAktif['nama_anak']} Hari Ini?',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     Text(
@@ -257,20 +255,6 @@ class _CekGiziFormState extends State<CekGiziForm> {
             ),
           ),
           const SizedBox(height: 25),
-
-          // Baris 1: Berat Badan
-          const Text('Berat Badan Saat Ini (kg)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _bbController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              filled: true, fillColor: Colors.grey[50], hintText: 'Misal: 11.2',
-              prefixIcon: const Icon(Icons.fitness_center, color: primaryColor),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-            ),
-          ),
-          const SizedBox(height: 20),
 
           // Baris 2: Tinggi Badan
           const Text('Tinggi Badan Saat Ini (cm)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
