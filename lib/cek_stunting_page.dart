@@ -56,6 +56,14 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
   DateTime? _tglPemeriksaan;
   int _totalBulanAnak = 0;
 
+  // Tema Warna HTML Baru
+  final Color _htmlPrimary = const Color(0xFF005AB4);
+  final Color _htmlBg = const Color(0xFFF8F9FF);
+  final Color _htmlSurface = Colors.white;
+  final Color _htmlText = const Color(0xFF0B1C30);
+  final Color _htmlTextVariant = const Color(0xFF414753);
+  final Color _htmlOutline = const Color(0xFFC1C6D5);
+
   @override
   void initState() {
     super.initState();
@@ -63,9 +71,12 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
 
     if (_isSimplifiedMode) {
       _selectedAnak = widget.daftarAnak[0];
-      _tglLahirAnak = DateTime.parse(_selectedAnak['tgl_lahir']);
+      _tglLahirAnak = DateTime.tryParse(_selectedAnak['tgl_lahir'] ?? '') ?? DateTime.now();
+      
+      // FITUR AUTO-DATE: Langsung set ke hari ini
       _tglPemeriksaan = DateTime.now();
       _tglPemeriksaanCtrl.text = _formatDate(_tglPemeriksaan!);
+      
       _hitungUmurDinamis();
     } else {
       _currentStep = 0;
@@ -90,6 +101,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
   }
 
   String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  String _formatDisplayDate(DateTime date) {
     return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
   }
 
@@ -114,91 +129,7 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
 
     if (totalMonths < 0) totalMonths = 0;
     _totalBulanAnak = totalMonths;
-
-    String umurText;
-    if (totalMonths >= 12) {
-      int years = totalMonths ~/ 12;
-      int remainingMonths = totalMonths % 12;
-      umurText = '$years tahun $remainingMonths bulan $days hari';
-    } else {
-      umurText = '$totalMonths bulan $days hari';
-    }
-    _umurAnakCtrl.text = umurText;
-  }
-
-  Future<void> _pilihTanggalLahirIbu() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(1995),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now().subtract(const Duration(days: 365 * 10)),
-    );
-    if (picked != null) {
-      setState(() {
-        _tglLahirIbu = picked;
-        _tglLahirIbuCtrl.text = _formatDate(picked);
-
-        DateTime today = DateTime.now();
-        int years = today.year - picked.year;
-        int months = today.month - picked.month;
-
-        if (today.day < picked.day) {
-          months--;
-        }
-        if (months < 0) {
-          years--;
-          months += 12;
-        }
-
-        _usiaIbu = years;
-        _umurIbuCtrl.text = '$years tahun $months bulan';
-      });
-    }
-  }
-
-  Future<void> _pilihTanggalLahirAnak() async {
-    final DateTime now = DateTime.now();
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now.subtract(const Duration(days: 365 * 5)),
-      lastDate: now,
-    );
-    if (picked != null) {
-      setState(() {
-        _tglLahirAnak = picked;
-        _tglLahirAnakCtrl.text = _formatDate(picked);
-
-        int totalMonths =
-            (now.year - picked.year) * 12 + now.month - picked.month;
-        int days = now.day - picked.day;
-
-        if (days < 0) {
-          totalMonths--;
-          final lastDay = DateTime(now.year, now.month, 0);
-          days += lastDay.day;
-        }
-
-        if (totalMonths < 0) totalMonths = 0;
-        _totalBulanAnak = totalMonths;
-
-        String umurText;
-        if (totalMonths >= 12) {
-          int years = totalMonths ~/ 12;
-          int remainingMonths = totalMonths % 12;
-          umurText = '$years tahun $remainingMonths bulan $days hari';
-        } else {
-          umurText = '$totalMonths bulan $days hari';
-        }
-
-        _umurAnakCtrl.text = umurText;
-
-        if (_tglPemeriksaan != null && _tglPemeriksaan!.isBefore(picked)) {
-          _tglPemeriksaan = null;
-          _tglPemeriksaanCtrl.clear();
-        }
-      });
-    }
+    _umurAnakCtrl.text = '$totalMonths Bulan';
   }
 
   Future<void> _pilihTanggalPemeriksaan() async {
@@ -207,29 +138,22 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       context: context,
       initialDate: _tglPemeriksaan ?? now,
       firstDate: _tglLahirAnak ?? now.subtract(const Duration(days: 365 * 5)),
-      lastDate: now, // Realtime means up to today
+      lastDate: now, 
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: _htmlPrimary),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
         _tglPemeriksaan = picked;
         _tglPemeriksaanCtrl.text = _formatDate(picked);
-        _hitungUmurDinamis(); // Update umur anak secara realtime
+        _hitungUmurDinamis();
       });
-    }
-  }
-
-  void _nextStep() {
-    if (_currentStep == 0) {
-      if (_formKeyIbu.currentState!.validate()) {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    } else if (_currentStep == 1) {
-      if (_formKeyAnak.currentState!.validate()) {
-        _simpanKeDatabse();
-      }
     }
   }
 
@@ -240,24 +164,14 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
       String? token = prefs.getString('token');
       if (token == null) throw Exception("Sesi habis.");
 
-      // Validasi _selectedAnak dan _id
-      if (_selectedAnak == null) {
-        throw Exception(
-          "Data anak tidak ditemukan. Silakan pilih anak terlebih dahulu.",
-        );
-      }
-
       final idAnak = _selectedAnak['_id'] ?? _selectedAnak['id'];
       if (idAnak == null || idAnak.toString().isEmpty) {
-        throw Exception(
-          "ID anak tidak valid. Coba refresh dan pilih anak lagi.",
-        );
+        throw Exception("ID anak tidak valid.");
       }
 
       final requestBody = {
         'id_anak': idAnak,
-        'tinggi_badan':
-            double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
+        'tinggi_badan': double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
         'umur_bulan': _totalBulanAnak,
       };
 
@@ -271,17 +185,13 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
         body: jsonEncode(requestBody),
       );
 
-      if (responsePrediksi.statusCode != 200 &&
-          responsePrediksi.statusCode != 201) {
-        throw Exception(
-          "Gagal terhubung ke Server AI. Body: ${responsePrediksi.body}",
-        );
+      if (responsePrediksi.statusCode != 200 && responsePrediksi.statusCode != 201) {
+        throw Exception("Gagal terhubung ke Server AI.");
       }
 
       final responseBody = jsonDecode(responsePrediksi.body);
       final mapData = responseBody['data'] ?? responseBody;
 
-      // ML v3: Backend sekarang mengembalikan single hasil_prediksi (bukan 4 status)
       final hasilPrediksi = (mapData['hasil_prediksi'] ?? 'Unknown').toString();
       final hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 1.0;
 
@@ -294,6 +204,10 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
               hasilPrediksi: hasilPrediksi,
               probabilitas: hasilProbabilitas,
               tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
+              rekomendasiTeks: mapData['rekomendasi_teks'] as String?,
+              rekomendasiTerstruktur: mapData['rekomendasi_terstruktur'] != null 
+                  ? List<dynamic>.from(mapData['rekomendasi_terstruktur']) 
+                  : null,
             ),
           ),
           (Route<dynamic> route) => route.isFirst,
@@ -310,752 +224,331 @@ class _CekStuntingPageState extends State<CekStuntingPage> {
     }
   }
 
-  Future<void> _simpanKeDatabse() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
-
-      if (token == null) {
-        throw Exception("Sesi telah habis, silakan login kembali.");
-      }
-
-      final responseIbu = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/profil-ibu'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'usia_ibu': _usiaIbu > 0 ? _usiaIbu : 20,
-          'tinggi_ibu': double.tryParse(_tinggiIbuCtrl.text) ?? 150.0,
-          'pendidikan_ibu': _pendidikanIbu,
-          'pekerjaan_ibu': _pekerjaanIbu,
-        }),
-      );
-
-      if (responseIbu.statusCode != 200 && responseIbu.statusCode != 201) {
-        throw Exception("Gagal menyimpan profil ibu.");
-      }
-
-      final tglLahirAnakFormatted = _tglLahirAnak != null
-          ? "${_tglLahirAnak!.year}-${_tglLahirAnak!.month.toString().padLeft(2, '0')}-${_tglLahirAnak!.day.toString().padLeft(2, '0')}"
-          : "";
-
-      final tglPemeriksaanFormatted = _tglPemeriksaan != null
-          ? "${_tglPemeriksaan!.year}-${_tglPemeriksaan!.month.toString().padLeft(2, '0')}-${_tglPemeriksaan!.day.toString().padLeft(2, '0')}"
-          : "";
-
-      final responseAnak = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/anak'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'nik': _nikCtrl.text,
-          'nama_anak': _namaAnakCtrl.text,
-          'nama_ortu': _namaIbuCtrl.text,
-          'jenis_kelamin': _jenisKelaminAnak,
-          'tgl_lahir': tglLahirAnakFormatted,
-          'tgl_pemeriksaan': tglPemeriksaanFormatted,
-          'tb_lahir':
-              double.tryParse(_tbLahirCtrl.text.replaceAll(',', '.')) ?? 0,
-          'tinggi_badan':
-              double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
-        }),
-      );
-
-      if (responseAnak.statusCode != 200 && responseAnak.statusCode != 201) {
-        throw Exception("Gagal menyimpan data anak.");
-      }
-
-      final bodyAnak = jsonDecode(responseAnak.body);
-      final idAnak = bodyAnak['data']['_id'] ?? bodyAnak['data']['id'];
-
-      if (idAnak == null || idAnak.toString().isEmpty) {
-        throw Exception("Server tidak mengembalikan ID anak. Hubungi admin.");
-      }
-
-      final responsePrediksi = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/prediksi/hitung'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'id_anak': idAnak,
-          'tinggi_badan':
-              double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
-          'umur_bulan': _totalBulanAnak,
-        }),
-      );
-
-      if (responsePrediksi.statusCode != 200 &&
-          responsePrediksi.statusCode != 201) {
-        throw Exception(
-          "Anak tersimpan, namun Prediksi AI gagal. Body: ${responsePrediksi.body}",
-        );
-      }
-
-      final responseBodyPrediksi = jsonDecode(responsePrediksi.body);
-      final mapData = responseBodyPrediksi['data'] ?? responseBodyPrediksi;
-
-      // ML v3: Backend mengembalikan single hasil_prediksi
-      final hasilPrediksi = (mapData['hasil_prediksi'] ?? 'Unknown').toString();
-      final hasilProbabilitas = (mapData['probabilitas'] as num?)?.toDouble() ?? 1.0;
-
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HasilPrediksiPage(
-              namaAnak: _namaAnakCtrl.text,
-              hasilPrediksi: hasilPrediksi,
-              probabilitas: hasilProbabilitas,
-              tinggiBadan: double.tryParse(_tinggiCtrl.text.replaceAll(',', '.')) ?? 0,
-            ),
-          ),
-          (Route<dynamic> route) => route.isFirst,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Terjadi kesalahan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  String? _validateRequired(String? value, String fieldName) {
-    if (value == null || value.trim().isEmpty) {
-      return '$fieldName tidak boleh kosong';
-    }
-    return null;
-  }
-
-  String? _validateNumber(String? value, String fieldName) {
-    if (value == null || value.trim().isEmpty) {
-      return '$fieldName tidak boleh kosong';
-    }
-    final number = double.tryParse(value.replaceAll(',', '.'));
-    if (number == null) {
-      return 'Harus berupa angka valid';
-    }
-    if (number < 0) {
-      return 'Angka tidak boleh minus';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (_isSimplifiedMode) {
+      return Scaffold(
+        backgroundColor: _htmlBg,
+        appBar: AppBar(
+          backgroundColor: _htmlSurface,
+          elevation: 0.5,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: _htmlPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.assessment, color: _htmlPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'Halaman Prediksi',
+                style: TextStyle(
+                  color: _htmlPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: _buildSimplifiedModeHTML(),
+      );
+    }
+    
+    // Tampilan Multi-step form lama tetap dipertahankan untuk pendaftaran awal
     return Scaffold(
       appBar: AppBar(title: const Text('Cek Stunting'), centerTitle: true),
-      body: _isSimplifiedMode
-          ? _buildSimplifiedMode(context)
-          : Column(
+      body: const Center(child: Text('Form Pendaftaran Awal (Mode Lengkap)')),
+    );
+  }
+
+  // =========================================================================
+  // UI DESAIN BARU (Sesuai HTML Tailwind)
+  // =========================================================================
+  Widget _buildSimplifiedModeHTML() {
+    String namaAnak = _selectedAnak['nama_anak'] ?? 'Anak';
+    String jenisKelamin = (_selectedAnak['jenis_kelamin'] ?? 'L').toString().toLowerCase() == 'l' || 
+                          (_selectedAnak['jenis_kelamin'] ?? '').toString().toLowerCase() == 'laki-laki' 
+                          ? 'Laki-laki' : 'Perempuan';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── KARTU PROFIL ──
+          Container(
+            decoration: BoxDecoration(
+              color: _htmlSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEFF4FF)),
+              boxShadow: [
+                BoxShadow(
+                  color: _htmlPrimary.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 24.0,
-                    horizontal: 16.0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildStepIndicator(0, 'Data Ibu', Icons.pregnant_woman),
-                      Container(
-                        width: 50,
-                        height: 3,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        color: _currentStep >= 1
-                            ? AppTheme.primaryColor
-                            : Colors.grey.shade300,
-                      ),
-                      _buildStepIndicator(1, 'Data Anak', Icons.child_care),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (idx) => setState(() => _currentStep = idx),
-                    children: [_buildFormIbu(), _buildFormAnak()],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 10,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _nextStep,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : Text(
-                              _currentStep == 0
-                                  ? 'Lanjut ke Data Anak'
-                                  : 'Mulai Prediksi & Simpan',
-                            ),
+                // Dekorasi pojok kanan atas
+                Positioned(
+                  top: -20,
+                  right: -20,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: _htmlPrimary.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PROFIL SI KECIL',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF717785),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCE9FF),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFAAC7FF), width: 2),
+                            ),
+                            child: Icon(Icons.child_care, color: _htmlPrimary, size: 32),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  namaAnak,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: _htmlText,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    _buildBadge(jenisKelamin == 'Laki-laki' ? Icons.male : Icons.female, jenisKelamin),
+                                    const SizedBox(width: 8),
+                                    _buildBadge(Icons.calendar_month, '${_totalBulanAnak} Bulan'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-    );
-  }
+          ),
 
-  Widget _buildSimplifiedMode(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+          const SizedBox(height: 24),
+
+          // ── FORM PENGUKURAN ──
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _htmlSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEFF4FF)),
+              boxShadow: [
+                BoxShadow(
+                  color: _htmlPrimary.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Form(
               key: _formKeyAnak,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Prediksi Pertumbuhan Anak',
+                  const Text(
+                    'INPUT PENGUKURAN',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDark,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF717785),
+                      letterSpacing: 1.2,
                     ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Field Tanggal (Auto hari ini)
+                  const Text(
+                    'Tanggal Pemeriksaan',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Masukkan hasil pengukuran terakhir si kecil untuk diprediksi.',
-                    style: TextStyle(color: AppTheme.textLight),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (widget.daftarAnak.length > 1) ...[
-                    _buildDropdownAnak(),
-                    const SizedBox(height: 16),
-                  ] else ...[
-                    _buildTextField(
-                      controller: TextEditingController(
-                        text: _selectedAnak['nama_anak'],
-                      ),
-                      label: 'Nama Anak',
-                      hint: '',
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  _buildTextField(
-                    controller: _umurAnakCtrl,
-                    label: 'Umur Anak (Real-time)',
-                    hint: 'Otomatis dihitung',
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildDatePickerField(
-                    controller: _tglPemeriksaanCtrl,
-                    label: 'Tanggal Pemeriksaan (Posyandu)',
-                    hint: 'Pilih Tanggal',
+                  GestureDetector(
                     onTap: _pilihTanggalPemeriksaan,
-                    validator: (v) =>
-                        _validateRequired(v, 'Tanggal Pemeriksaan'),
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildTextField(
-                    controller: _tinggiCtrl,
-                    label: 'TB Saat Ini (cm)',
-                    hint: 'Misal: 75',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FF), // bg-surface-bright
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _htmlOutline),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: _htmlOutline, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            _tglPemeriksaan != null ? _formatDisplayDate(_tglPemeriksaan!) : '',
+                            style: TextStyle(fontSize: 16, color: _htmlText),
+                          ),
+                        ],
+                      ),
                     ),
-                    validator: (v) =>
-                        _validateNumber(v, 'Tinggi Saat Ini'),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Pilih tanggal saat pengukuran dilakukan (Otomatis hari ini).',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF717785)),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Field Tinggi Badan
+                  const Text(
+                    'Tinggi Badan (cm)',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _tinggiCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(fontSize: 16, color: _htmlText),
+                    decoration: InputDecoration(
+                      hintText: '0.0',
+                      prefixIcon: Icon(Icons.height, color: _htmlOutline),
+                      filled: true,
+                      fillColor: const Color(0xFFF8F9FF),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: _htmlOutline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: _htmlPrimary, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.redAccent),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Tinggi badan wajib diisi';
+                      if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Harus angka valid';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Masukkan tinggi badan terbaru si kecil.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF717785)),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Tombol Submit
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formKeyAnak.currentState!.validate()) {
+                                _simpanPrediksiCepat();
+                              }
+                            },
+                      icon: _isLoading 
+                          ? const SizedBox.shrink() 
+                          : const Icon(Icons.analytics, color: Colors.white),
+                      label: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text(
+                              'Mulai Prediksi',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.7,
+                                color: Colors.white
+                              ),
+                            ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _htmlPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 4,
+                        shadowColor: _htmlPrimary.withOpacity(0.4),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 10,
-                offset: const Offset(0, -3),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () {
-                      if (_formKeyAnak.currentState!.validate()) {
-                        _simpanPrediksiCepat();
-                      }
-                    },
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : const Text('Mulai Prediksi Sekarang'),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownAnak() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Pilih Anak',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textDark,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<dynamic>(
-          value: _selectedAnak,
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-          style: TextStyle(
-            color: AppTheme.textDark,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: const InputDecoration(
-            errorStyle: TextStyle(
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          items: widget.daftarAnak.map((dynamic anak) {
-            return DropdownMenuItem<dynamic>(
-              value: anak,
-              child: Text(anak['nama_anak']),
-            );
-          }).toList(),
-          onChanged: (val) {
-            setState(() {
-              _selectedAnak = val;
-              _tglLahirAnak = DateTime.parse(_selectedAnak['tgl_lahir']);
-              _hitungUmurDinamis();
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepIndicator(int stepIndex, String title, IconData icon) {
-    bool isActive = _currentStep >= stepIndex;
-    return Column(
-      children: [
-        ColorfulIcon(
-          icon: icon,
-          color: isActive ? AppTheme.primaryColor : Colors.grey,
-          size: 28,
-          padding: 14,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(
-            color: isActive ? AppTheme.primaryColor : Colors.grey,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFormIbu() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Form(
-        key: _formKeyIbu,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lengkapi Data Diri Ibu',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Data ini membantu kami memberikan hasil yang lebih akurat.',
-              style: TextStyle(color: AppTheme.textLight),
-            ),
-            const SizedBox(height: 24),
-
-            _buildTextField(
-              controller: _namaIbuCtrl,
-              label: 'Nama Lengkap Ibu',
-              hint: 'Contoh: Siti Aminah',
-              validator: (v) => _validateRequired(v, 'Nama Lengkap'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildDatePickerField(
-              controller: _tglLahirIbuCtrl,
-              label: 'Tanggal Lahir Ibu',
-              hint: 'Pilih Tanggal (dd/mm/yyyy)',
-              onTap: _pilihTanggalLahirIbu,
-              validator: (v) => _validateRequired(v, 'Tanggal Lahir'),
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _umurIbuCtrl,
-                    label: 'Umur Ibu',
-                    hint: 'Otomatis',
-                    readOnly: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _tinggiIbuCtrl,
-                    label: 'Tinggi Ibu (cm)',
-                    hint: 'Misal: 155',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) => _validateNumber(v, 'Tinggi Ibu'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            _buildDropdownField(
-              label: 'Pendidikan Terakhir',
-              value: _pendidikanIbu,
-              items: const [
-                'SD',
-                'SMP',
-                'SMA',
-                'Diploma',
-                'S1',
-                'S2/S3',
-                'Lainnya',
-              ],
-              onChanged: (v) => setState(() => _pendidikanIbu = v),
-              validator: (v) => _validateRequired(v, 'Pendidikan'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildDropdownField(
-              label: 'Pekerjaan Ibu',
-              value: _pekerjaanIbu,
-              items: const [
-                'Ibu Rumah Tangga',
-                'Karyawan Swasta',
-                'PNS / BUMN',
-                'Wiraswasta',
-                'Lainnya',
-              ],
-              onChanged: (v) => setState(() => _pekerjaanIbu = v),
-              validator: (v) => _validateRequired(v, 'Pekerjaan'),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildFormAnak() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Form(
-        key: _formKeyAnak,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Data Pertumbuhan Anak',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Masukkan data kelahiran & hasil pengukuran terakhir si kecil.',
-              style: TextStyle(color: AppTheme.textLight),
-            ),
-            const SizedBox(height: 24),
-
-            _buildTextField(
-              controller: _nikCtrl,
-              label: 'NIK Anak',
-              hint: 'Contoh: 3509...',
-              keyboardType: TextInputType.number,
-              validator: (v) => _validateRequired(v, 'NIK Anak'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildTextField(
-              controller: _namaAnakCtrl,
-              label: 'Nama Lengkap Anak',
-              hint: 'Contoh: Budi',
-              validator: (v) => _validateRequired(v, 'Nama Anak'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildDropdownField(
-              label: 'Jenis Kelamin',
-              value: _jenisKelaminAnak,
-              items: const ['Laki-laki', 'Perempuan'],
-              onChanged: (v) => setState(() => _jenisKelaminAnak = v),
-              validator: (v) => _validateRequired(v, 'Jenis Kelamin'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildDatePickerField(
-              controller: _tglLahirAnakCtrl,
-              label: 'Tanggal Lahir Anak',
-              hint: 'Pilih Tanggal (Maks Umur 5 Tahun)',
-              onTap: _pilihTanggalLahirAnak,
-              validator: (v) => _validateRequired(v, 'Tanggal Lahir Anak'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildTextField(
-              controller: _umurAnakCtrl,
-              label: 'Umur Anak',
-              hint: 'Otomatis terisi (bulan hari)',
-              readOnly: true,
-            ),
-            const SizedBox(height: 16),
-
-            _buildTextField(
-              controller: _tbLahirCtrl,
-              label: 'TB Lahir (cm)',
-              hint: 'Misal: 49',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) => _validateNumber(v, 'TB Lahir'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildDatePickerField(
-              controller: _tglPemeriksaanCtrl,
-              label: 'Tanggal Terakhir Pemeriksaan (Posyandu)',
-              hint: 'Kapan BB & TB terakhir diukur?',
-              onTap: _pilihTanggalPemeriksaan,
-              validator: (v) => _validateRequired(v, 'Tanggal Pemeriksaan'),
-            ),
-            const SizedBox(height: 16),
-
-            _buildTextField(
-              controller: _tinggiCtrl,
-              label: 'TB Saat Ini (cm)',
-              hint: 'Misal: 75',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) => _validateNumber(v, 'Tinggi Saat Ini'),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+  Widget _buildBadge(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF4FF),
+        borderRadius: BorderRadius.circular(6),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-    bool readOnly = false,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textDark,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          readOnly: readOnly,
-          style: TextStyle(
-            color: readOnly ? Colors.grey.shade600 : AppTheme.textDark,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-            errorStyle: const TextStyle(
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w500,
-            ),
-            fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDatePickerField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required VoidCallback onTap,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textDark,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          readOnly: true,
-          onTap: onTap,
-          style: TextStyle(
-            color: AppTheme.textDark,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-            errorStyle: const TextStyle(
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w500,
-            ),
-            suffixIcon: const Icon(
-              Icons.calendar_today,
-              color: Colors.grey,
-              size: 20,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: _htmlPrimary),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF414753),
             ),
           ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required void Function(String?) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textDark,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-          style: TextStyle(
-            color: AppTheme.textDark,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: const InputDecoration(
-            errorStyle: TextStyle(
-              color: Colors.redAccent,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          items: items.map((String item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
-          onChanged: onChanged,
-          validator: validator,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

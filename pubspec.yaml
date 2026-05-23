@@ -49,7 +49,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,6 +70,15 @@ flutter:
 
   assets:
     - assets/images/Logo_Stunt.png
+    - assets/images/kila_icon.png
+    - assets/images/mpasi_buah.png
+    - assets/images/mpasi_sayur.png
+    - assets/images/mpasi_daging.png
+    - assets/images/mpasi_default.png
+    - assets/images/mpasi_telur.png
+    - assets/images/mpasi_ikan.png
+    - assets/images/mpasi_ayam.png
+    
 
   # To add assets to your application, add an assets section, like this:
   # assets:

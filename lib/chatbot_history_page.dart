@@ -13,6 +13,15 @@ class ChatbotHistoryPage extends StatefulWidget {
 class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
   List<dynamic> _historyList = [];
 
+  // Tema Warna yang sesuai dengan ChatbotPage (Teal/Medical Light Blue)
+  final Color _primary = const Color(0xFF006A63);
+  final Color _primaryFixed = const Color(0xFF8EF4E9);
+  final Color _surfaceLowest = const Color(0xFFFFFFFF);
+  final Color _surfaceHigh = const Color(0xFFE6E8E8);
+  final Color _onSurface = const Color(0xFF191C1D);
+  final Color _onSurfaceVariant = const Color(0xFF3D4947);
+  final Color _bgStart = const Color(0xFFF8FAFA);
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +65,9 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
       };
     }).toList();
 
-    Navigator.pushReplacement(
+    // Memuat ulang sesi di Halaman Utama Chatbot, BUKAN menumpuk halaman baru.
+    // Ini adalah pola standar seperti ChatGPT / Gemini.
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (context) => ChatbotPage(
@@ -64,29 +75,33 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
           initialMessages: messages,
         ),
       ),
+      (Route<dynamic> route) => route.isFirst, // Kembali ke Root (misal Home), lalu tumpuk Chat baru
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue color
-
     return Scaffold(
-      backgroundColor: Colors.white, // White background matching design
+      backgroundColor: _bgStart,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Riwayat Percakapan',
           style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontSize: 16,
+            color: _onSurface,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
+        backgroundColor: _surfaceLowest,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: _surfaceHigh, height: 1.0),
+        ),
+        iconTheme: IconThemeData(color: _onSurfaceVariant),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_sweep),
+            icon: Icon(Icons.delete_sweep, color: _onSurfaceVariant),
             tooltip: 'Hapus Semua',
             onPressed: () {
               showDialog(
@@ -99,7 +114,7 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Batal'),
+                      child: Text('Batal', style: TextStyle(color: _onSurfaceVariant)),
                     ),
                     TextButton(
                       onPressed: () {
@@ -119,10 +134,17 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
         ],
       ),
       body: _historyList.isEmpty
-          ? const Center(
-              child: Text(
-                'Belum ada riwayat obrolan.',
-                style: TextStyle(color: Colors.grey),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_outline, size: 60, color: _surfaceHigh),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Belum ada riwayat obrolan.',
+                    style: TextStyle(color: _onSurfaceVariant, fontSize: 16),
+                  ),
+                ],
               ),
             )
           : Column(
@@ -135,17 +157,12 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                       var session = _historyList[index];
                       List msgs = session['messages'] ?? [];
 
-                      // Cari pesan pembuka atau terakhir pengguna
-                      String firstMessage = 'Tidak ada pesan';
+                      // Cari pesan pembuka pengguna
+                      String firstMessage = 'Percakapan dengan Kila';
                       if (msgs.isNotEmpty) {
-                        // Karena array disortir terbalik (reverse), pesan terbaru ada di index 0
-                        // Namun untuk preview judul yang masuk akal, kita ambil pesan awal dari sesi (yang terakhir di array reverse)
-                        var userMsgs = msgs
-                            .where((m) => m['sender'] == 'user')
-                            .toList();
+                        var userMsgs = msgs.where((m) => m['sender'] == 'user').toList();
                         if (userMsgs.isNotEmpty) {
-                          firstMessage = userMsgs
-                              .last['text']; // Last in reversed list = First actual message
+                          firstMessage = userMsgs.last['text']; 
                         } else {
                           firstMessage = msgs.first['text'];
                         }
@@ -160,7 +177,7 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
                             color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(Icons.delete_outline, color: Colors.red),
                         ),
@@ -171,7 +188,7 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                               title: const Text('Hapus Sesi Ini?'),
                               content: const Text('Percakapan ini akan dihapus dari riwayat.'),
                               actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Batal', style: TextStyle(color: _onSurfaceVariant))),
                                 TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
                               ],
                             ),
@@ -181,55 +198,46 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                         child: GestureDetector(
                           onTap: () => _continueSession(session),
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 15),
-                            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.grey.shade100),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 5))]
+                              color: _surfaceLowest,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: _surfaceHigh),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
                             ),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFa7f3d0),
+                                    color: _primaryFixed.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(Icons.chat_bubble_outline, color: primaryColor, size: 24),
+                                  child: Icon(Icons.forum_outlined, color: _primary, size: 24),
                                 ),
-                                const SizedBox(width: 15),
+                                const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        firstMessage.length > 35 ? '${firstMessage.substring(0, 35)}...' : firstMessage,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                        firstMessage,
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _onSurface),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(height: 5),
+                                      const SizedBox(height: 6),
                                       Text(
                                         session['date'].toString().split('.').first.replaceAll('T', ' \u2022 '),
-                                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                                        style: TextStyle(color: _onSurfaceVariant, fontSize: 12),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Lanjutkan', style: TextStyle(color: primaryColor, fontSize: 11, fontWeight: FontWeight.w600)),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.arrow_forward_ios, color: primaryColor, size: 10),
                                     ],
                                   ),
                                 ),
@@ -242,12 +250,12 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 30),
+                  padding: const EdgeInsets.only(bottom: 24, top: 12),
                   child: Text(
-                    'Riwayat percakapan disimpan selama 30 hari terakhir',
+                    'Riwayat percakapan disimpan secara lokal di perangkat Anda.',
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.indigo.shade200,
+                      fontSize: 12,
+                      color: _onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -255,5 +263,4 @@ class _ChatbotHistoryPageState extends State<ChatbotHistoryPage> {
             ),
     );
   }
-
 }

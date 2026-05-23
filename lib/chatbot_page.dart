@@ -18,11 +18,30 @@ class ChatbotPage extends StatefulWidget {
 
 class _ChatbotPageState extends State<ChatbotPage> {
   final TextEditingController _msgController = TextEditingController();
+  final ScrollController _scrollController = ScrollController(); // Controller untuk auto-scroll
   final List<Map<String, String>> _messagesUI = [];
   final List<Map<String, dynamic>> _historyGemini = [];
   bool _isLoading = false;
 
   late final String _sessionId;
+
+  // -- Tema Warna Biru Konsisten --
+  final Color _bgStart = const Color(0xFFF8F9FF); 
+  final Color _bgMid = const Color(0xFFF8F9FF); 
+  final Color _bgEnd = const Color(0x331978E5); 
+  
+  final Color _primary = const Color(0xFF1978E5); // Biru Utama
+  final Color _primaryContainer = const Color(0xFFDCE9FF); 
+  final Color _primaryFixed = const Color(0xFFEFF4FF); 
+  
+  final Color _surfaceLowest = const Color(0xFFFFFFFF);
+  final Color _surfaceHigh = const Color(0xFFE2E8F0);
+  
+  final Color _onSurface = const Color(0xFF0B1C30);
+  final Color _onSurfaceVariant = const Color(0xFF717785);
+  final Color _secondary = const Color(0xFF1978E5);
+
+  final String _kilaAvatarPath = 'assets/images/kila_icon.png';
 
   @override
   void initState() {
@@ -30,11 +49,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _sessionId = widget.sessionId ?? DateTime.now().toIso8601String();
 
     if (widget.initialMessages != null && widget.initialMessages!.isNotEmpty) {
-      // Melanjutkan sesi lama: muat ulang pesan & bangun ulang konteks Gemini
       _messagesUI.addAll(widget.initialMessages!);
       _rebuildGeminiHistory();
+      _scrollToBottom();
     } else {
-      // Sesi baru
+      // Menggunakan .add() agar pesan muncul dari atas
       _messagesUI.add({
         'sender': 'ai',
         'text': 'Halo Bunda! Mesin Kila sekarang makin canggih dan ramah. Mari berdiskusi!'
@@ -43,41 +62,41 @@ class _ChatbotPageState extends State<ChatbotPage> {
     }
   }
 
-  /// Membangun ulang konteks history Gemini dari pesan-pesan yang sudah ada
-  /// agar AI tetap ingat percakapan sebelumnya saat melanjutkan sesi.
+  // Fungsi untuk scroll otomatis ke bawah saat ada pesan baru
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   void _rebuildGeminiHistory() {
     _historyGemini.clear();
     List<Map<String, dynamic>> tempHistory = [];
     String expectRole = 'user';
     
-    for (int i = _messagesUI.length - 1; i >= 0; i--) {
+    // Looping maju karena array sekarang dari atas ke bawah
+    for (int i = 0; i < _messagesUI.length; i++) {
       final msg = _messagesUI[i];
       if (msg['sender'] == 'user' && expectRole == 'user') {
-        tempHistory.add({
-          'role': 'user',
-          'parts': [{'text': msg['text']}]
-        });
+        tempHistory.add({'role': 'user', 'parts': [{'text': msg['text']}]});
         expectRole = 'model';
       } else if (msg['sender'] == 'ai' && expectRole == 'model') {
-        tempHistory.add({
-          'role': 'model',
-          'parts': [{'text': msg['text']}]
-        });
+        tempHistory.add({'role': 'model', 'parts': [{'text': msg['text']}]});
         expectRole = 'user';
       } else if (msg['sender'] == 'error') {
-        // Jika ada error/gagal, hapus pertanyaan user dari buffer (batal sinkronisasi)
         if (expectRole == 'model' && tempHistory.isNotEmpty) {
            tempHistory.removeLast(); 
            expectRole = 'user';
         }
       }
     }
-    
-    // Hapus pesan user di buffer jika jadi gantung (tanpa balasan sukses)
-    if (expectRole == 'model' && tempHistory.isNotEmpty) {
-      tempHistory.removeLast();
-    }
-    
+    if (expectRole == 'model' && tempHistory.isNotEmpty) tempHistory.removeLast();
     _historyGemini.addAll(tempHistory);
   }
 
@@ -86,33 +105,27 @@ class _ChatbotPageState extends State<ChatbotPage> {
     String? existing = prefs.getString('chat_sessions');
     List<dynamic> sessions = existing != null ? jsonDecode(existing) : [];
     
-    // Cari sesi ini apakah sudah terekam di memori, jika ya timpa, jika tiada buat baru
     int curIdx = sessions.indexWhere((s) => s['id'] == _sessionId);
     if (curIdx >= 0) {
       sessions[curIdx]['messages'] = _messagesUI;
     } else {
-      sessions.add({
-        'id': _sessionId,
-        'date': _sessionId, 
-        'messages': _messagesUI
-      });
+      sessions.add({'id': _sessionId, 'date': _sessionId, 'messages': _messagesUI});
     }
-    
     await prefs.setString('chat_sessions', jsonEncode(sessions));
   }
 
   void _kirimPesan() async {
     if (_msgController.text.trim().isEmpty) return;
-    
     String userText = _msgController.text.trim();
     
     setState(() {
-      _messagesUI.insert(0, {'sender': 'user', 'text': userText});
+      _messagesUI.add({'sender': 'user', 'text': userText}); // Menggunakan add()
       _isLoading = true;
       _msgController.clear();
     });
     
-    _saveToLocalStorage(); // Rekam history setiap user ngomong
+    _scrollToBottom(); // Scroll saat kirim
+    _saveToLocalStorage();
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -124,222 +137,339 @@ class _ChatbotPageState extends State<ChatbotPage> {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'message': userText,
-          'history': _historyGemini
-        }),
+        body: jsonEncode({'message': userText, 'history': _historyGemini}),
       );
+
+      if (!mounted) return; 
 
       if (response.statusCode == 200) {
         final dataJson = jsonDecode(response.body);
         String balas = dataJson['reply'] ?? 'Terjadi kebisuan Server AI';
         
-        setState(() {
-          _messagesUI.insert(0, {'sender': 'ai', 'text': balas});
-        });
-        
-        // Hanya simpan sinkronisasi sinkron jika sukses (menghindari error history gantung)
-        _historyGemini.add({
-          'role': 'user', 
-          'parts': [{'text': userText}]
-        });
-
-        // Simpan balik memori dari jawaban AI
-        _historyGemini.add({
-          'role': 'model', 
-          'parts': [{'text': balas}]
-        });
-        
-        _saveToLocalStorage(); // Simpan riwayat update jawaban AI ke HP
-
-      } else {
-        setState(() {
-          _messagesUI.insert(0, {'sender': 'error', 'text': 'Waduh, Server Backend menolak pesan. Detail: ${response.statusCode}'});
-        });
+        setState(() => _messagesUI.add({'sender': 'ai', 'text': balas}));
+        _historyGemini.add({'role': 'user', 'parts': [{'text': userText}]});
+        _historyGemini.add({'role': 'model', 'parts': [{'text': balas}]});
         _saveToLocalStorage();
+        _scrollToBottom(); // Scroll saat AI membalas
+      } else {
+        setState(() => _messagesUI.add({'sender': 'error', 'text': 'Waduh, Server Backend menolak pesan. Detail: ${response.statusCode}'}));
+        _saveToLocalStorage();
+        _scrollToBottom();
       }
     } catch (e) {
-      setState(() {
-        _messagesUI.insert(0, {'sender': 'error', 'text': 'Koneksi ke server pusat Laravel terputus. Nyalakan server lalu coba lagi.'});
-      });
+      if (!mounted) return; 
+      
+      setState(() => _messagesUI.add({'sender': 'error', 'text': 'Koneksi ke server pusat Laravel terputus. Nyalakan server lalu coba lagi.'}));
       _saveToLocalStorage();
+      _scrollToBottom();
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFFBFDBFE); // Light Blue color
-
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const CircleAvatar(radius: 16, backgroundColor: Colors.white, child: Icon(Icons.smart_toy, color: Color(0xFF1E293B), size: 18)),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Kila AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                Text('• Online', style: TextStyle(fontSize: 11, color: Color(0xFF1E293B).withOpacity(0.7))),
-              ],
-            ),
-          ],
-        ),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Riwayat Obrolan',
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotHistoryPage()));
-            },
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          // Area Percakapan
-          Expanded(
-            child: ListView.builder(
-              reverse: true, // Membalik urutan agar pesan baru ada di bawah but view-nya ngikut
-              padding: const EdgeInsets.all(16),
-              itemCount: _messagesUI.length,
-              itemBuilder: (context, index) {
-                bool isUser = _messagesUI[index]['sender'] == 'user';
-                return _buildPesanBubble(isUser, _messagesUI[index]['text']!, primaryColor);
-              },
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_bgStart, _bgMid, _bgEnd],
           ),
-          
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)),
-                    const SizedBox(width: 10),
-                    Text('Mengetik...', style: TextStyle(color: Colors.grey[500], fontSize: 13, fontStyle: FontStyle.italic)),
-                  ],
+        ),
+        child: SafeArea(
+          bottom: false, 
+          child: Column(
+            children: [
+              _buildAppBar(),
+              
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  reverse: false, // MATIKAN REVERSE AGAR MULAI DARI ATAS
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 140), 
+                  itemCount: _messagesUI.length,
+                  itemBuilder: (context, index) {
+                    return _buildPesanBubble(_messagesUI[index]);
+                  },
                 ),
               ),
-            ),
-
-          // Suggestion Pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              children: [
-                _buildSuggestionPill('Apa MPASI yang bagus untuk usia 8 bulan?'),
-                _buildSuggestionPill('Berapa tinggi ideal anak 1 tahun?'),
-                _buildSuggestionPill('Tanda anak mengalami stunting'),
-              ],
-            ),
+            ],
           ),
+        ),
+      ),
+      
+      bottomSheet: Container(
+        color: _surfaceLowest.withValues(alpha: 0.85),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoading) _buildLoadingIndicator(),
+            if (_messagesUI.length <= 2) _buildSuggestionPills(),
+            _buildInputArea(),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Area Keyboard Input
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _msgController,
-                    decoration: InputDecoration(
-                      hintText: 'Tanya Kila...',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+  // =========================================================================
+  // WIDGET COMPONENTS
+  // =========================================================================
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: _surfaceLowest.withValues(alpha: 0.7),
+        border: Border(bottom: BorderSide(color: _surfaceHigh)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: _onSurfaceVariant),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 8),
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _surfaceLowest, width: 2),
+                      boxShadow: [
+                        BoxShadow(color: _primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))
+                      ],
                     ),
-                    onSubmitted: (value) => _kirimPesan(),
+                    child: _buildAvatarImage(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _isLoading ? null : _kirimPesan,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-                    child: const Icon(Icons.send, color: Color(0xFF1E293B), size: 20),
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _surfaceLowest, width: 2),
+                    ),
                   ),
-                )
-              ],
-            ),
-          )
+                ],
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Kila AI', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _onSurface)),
+                  Text('Online • Ready to help', style: TextStyle(fontSize: 12, color: _secondary)),
+                ],
+              ),
+            ],
+          ),
+          IconButton(
+            icon: Icon(Icons.history, color: _onSurfaceVariant),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotHistoryPage())),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestionPill(String text) {
+  Widget _buildAvatarImage() {
+    return ClipOval(
+      child: Image.asset(
+        _kilaAvatarPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: _primaryFixed,
+            child: Icon(Icons.smart_toy, color: _primary),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPesanBubble(Map<String, String> msg) {
+    bool isUser = msg['sender'] == 'user';
+    bool isError = msg['sender'] == 'error';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            Container(
+              width: 32,
+              height: 32,
+              margin: const EdgeInsets.only(right: 12, bottom: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: _surfaceHigh),
+              ),
+              child: _buildAvatarImage(),
+            ),
+          ],
+          
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: isUser ? _primary : (isError ? Colors.red.shade50 : _surfaceLowest),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(24),
+                  topRight: const Radius.circular(24),
+                  bottomLeft: isUser ? const Radius.circular(24) : const Radius.circular(4),
+                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(24),
+                ),
+                border: isUser ? null : Border.all(color: _surfaceHigh),
+                boxShadow: [
+                  if (!isUser) BoxShadow(color: _primary.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8))
+                ],
+              ),
+              child: isUser
+                  ? Text(
+                      msg['text']!,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+                    )
+                  : MarkdownBody(
+                      data: msg['text']!,
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(color: isError ? Colors.red : _onSurface, fontSize: 16, height: 1.5),
+                        strong: TextStyle(color: isError ? Colors.red : _onSurface, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionPills() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text('SUGGESTED FOR YOU', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _onSurfaceVariant, letterSpacing: 1.5)),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 70,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
+              _buildPill('Apa MPASI yang bagus untuk usia 8 bulan?', Icons.restaurant),
+              _buildPill('Berapa berat badan ideal anak?', Icons.monitor_weight),
+              _buildPill('Jadwal imunisasi bayi bulan ini', Icons.vaccines),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPill(String text, IconData icon) {
     return GestureDetector(
       onTap: () {
         _msgController.text = text;
         _kirimPesan();
       },
       child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+        margin: const EdgeInsets.only(right: 12),
+        width: 250,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Color(0xFF1E293B).withOpacity(0.2)),
-          borderRadius: BorderRadius.circular(20),
+          color: _surfaceLowest,
+          border: Border.all(color: _surfaceHigh),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
         ),
-        child: Text(text, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.bold)),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: _primaryFixed.withValues(alpha: 0.5), shape: BoxShape.circle),
+              child: Icon(icon, size: 16, color: _primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _onSurface)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPesanBubble(bool isUser, String isian, Color primaryColor) {
-    return Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (!isUser) // Icon Bot
-          Container(
-            margin: const EdgeInsets.only(right: 8, bottom: 12),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: primaryColor.withOpacity(0.2), shape: BoxShape.circle),
-            child: const Icon(Icons.smart_toy, color: Color(0xFF1E293B), size: 16),
-          ),
-        
-        Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.70),
-          decoration: BoxDecoration(
-            color: isUser ? primaryColor : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(20),
-              topRight: const Radius.circular(20),
-              bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
-              bottomRight: isUser ? Radius.zero : const Radius.circular(20),
-            ),
-            border: Border.all(color: isUser ? primaryColor : Colors.grey.shade200),
-            boxShadow: [if (!isUser) BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5, offset: const Offset(0, 2))],
-          ),
-          padding: const EdgeInsets.all(15),
-          child: isUser 
-            ? Text(isian, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14))
-            : MarkdownBody(
-                data: isian,
-                styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(fontSize: 14, color: Colors.black87),
-                  strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+  Widget _buildLoadingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: Row(
+        children: [
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _primary)),
+          const SizedBox(width: 12),
+          Text('Kila sedang berpikir...', style: TextStyle(color: _onSurfaceVariant, fontSize: 13, fontStyle: FontStyle.italic)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputArea() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24), 
+      decoration: BoxDecoration(
+        color: _surfaceLowest.withValues(alpha: 0.85),
+        border: Border(top: BorderSide(color: _surfaceHigh)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _msgController,
+                style: TextStyle(fontSize: 16, color: _onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Tanya Kila...',
+                  hintStyle: TextStyle(color: _onSurfaceVariant.withValues(alpha: 0.7)),
+                  filled: true,
+                  fillColor: _surfaceLowest,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: _surfaceHigh)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: _primaryContainer, width: 2)),
                 ),
+                onSubmitted: (value) => _kirimPesan(),
               ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _isLoading ? null : _kirimPesan,
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: _primary.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 6))],
+                ),
+                child: const Icon(Icons.send, color: Colors.white),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
