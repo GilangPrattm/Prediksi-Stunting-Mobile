@@ -169,7 +169,6 @@ class _HomePageState extends State<HomePage> {
   MpasiPage(
         daftarAnak: _daftarAnak,
         anakTerpilihIndeks: _anakTerpilihIndeks,
-        daftarResep: _daftarResep,
       ),
       const ProfilPage(), 
     ];

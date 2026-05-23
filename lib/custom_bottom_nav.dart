@@ -5,82 +5,110 @@ class CustomBottomNav extends StatelessWidget {
   final Function(int) onTap;
 
   const CustomBottomNav({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1978E5); // Warna Biru Konsisten
+    // Warna diatur menggunakan Teal (tema Stunt-Check). 
+    // Jika ingin kembali ke biru, ubah hex ini menjadi 0xFF1978E5
+    const Color primaryColor = Color(0xFF1978E5); 
 
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.8),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-        border: Border.all(color: Colors.white.withOpacity(0.8)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: primaryBlue,
-          unselectedItemColor: Colors.grey.shade400,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 10),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          onTap: onTap,
-          items: [
-            _buildNavItem(Icons.home_rounded, 'Beranda'),
-            _buildNavItem(Icons.history_rounded, 'Riwayat'),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: primaryBlue, // Center Button jadi biru
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x331978E5),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 24),
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        // ── 1. Background Bar (Paten menempel di layar bawah) ──
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4), // Bayangan lembut ke arah atas
               ),
-              label: '',
+            ],
+          ),
+          child: SafeArea(
+            child: SizedBox(
+              height: 65, // Tinggi rata navbar
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(Icons.home_rounded, 'Beranda', 0, primaryColor),
+                  _buildNavItem(Icons.history_rounded, 'Riwayat', 1, primaryColor),
+                  
+                  // Ruang kosong di tengah agar tombol tidak tertumpuk
+                  const SizedBox(width: 60), 
+                  
+                  _buildNavItem(Icons.restaurant_menu_rounded, 'MPASI', 3, primaryColor),
+                  _buildNavItem(Icons.person_outline_rounded, 'Profil', 4, primaryColor),
+                ],
+              ),
             ),
-            _buildNavItem(Icons.restaurant_menu_rounded, 'MPASI'),
-            _buildNavItem(Icons.person_outline_rounded, 'Profil'),
-          ],
+          ),
         ),
-      ),
+
+        // ── 2. Tombol Tengah (Prediksi) yang Menonjol ──
+        Positioned(
+          top: -25, // Nilai minus ini yang menarik tombol keluar ke atas
+          child: GestureDetector(
+            onTap: () => onTap(2),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 5), // Garis putih tebal pembatas
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  )
+                ],
+              ),
+              child: const Icon(
+                Icons.analytics_outlined, 
+                color: Colors.white, 
+                size: 28, // Ukuran ikon sedikit lebih besar
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label) {
-    return BottomNavigationBarItem(
-      icon: Padding(
-        padding: const EdgeInsets.only(bottom: 4, top: 4),
-        child: Icon(icon, size: 24),
+  // ── Fungsi Pembangun Tombol Samping ──
+  Widget _buildNavItem(IconData icon, String label, int index, Color primaryColor) {
+    final isSelected = currentIndex == index;
+    final color = isSelected ? primaryColor : Colors.grey.shade400;
+
+    return GestureDetector(
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque, // Area tap mencakup seluruh tinggi navbar
+      child: SizedBox(
+        width: 60, // Lebar area tekan per tombol
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
-      label: label,
     );
   }
 }
