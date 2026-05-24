@@ -4,6 +4,6 @@ class ApiConfig {
   // ====================================================
   // CUKUP GANTI ALAMAT IP DI BAWAH INI SATU KALI SAJA,
   // MAKA SELURUH HALAMAN FLUTTER AKAN MENGIKUTINYA.
-  static const String baseUrl = 'http://192.168.1.76:8000/api';
+  static const String baseUrl = 'http://192.168.1.65:8000/api';
 }
 
