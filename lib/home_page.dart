@@ -13,6 +13,7 @@ import 'cek_stunting_page.dart';
 import 'chatbot_page.dart';
 import 'hasil_prediksi_page.dart';
 import 'riwayat_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -33,6 +34,9 @@ class _HomePageState extends State<HomePage> {
   bool _isProfilIbuLengkap = true;
   List<dynamic> _daftarHistoriPrediksi = [];
   bool _isLoadingHistori = true;
+
+  List<dynamic> _daftarInspirasi = [];
+  bool _isLoadingInspirasi = true;
 
   // --- WARNA TEMA ---
   final Color _bgHitam = const Color(0xFF0B1C30);
@@ -112,6 +116,19 @@ class _HomePageState extends State<HomePage> {
         });
       } else {
         setState(() => _isLoadingHistori = false);
+      }
+
+      final resInspirasi = await http.get(
+        Uri.parse('$_baseUrl/inspirasi'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resInspirasi.statusCode == 200) {
+        setState(() {
+          _daftarInspirasi = jsonDecode(resInspirasi.body)['data'] ?? [];
+          _isLoadingInspirasi = false;
+        });
+      } else {
+        setState(() => _isLoadingInspirasi = false);
       }
     } catch (e) {
       print("Error Fetching API: $e");
@@ -760,85 +777,54 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         const SizedBox(height: 16),
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                height: 260,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                          image: DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400'),
-                            fit: BoxFit.cover,
-                          ),
+        
+        if (_isLoadingInspirasi)
+          const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+        else if (_daftarInspirasi.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20), 
+              child: Text('Belum ada tips hari ini.', style: TextStyle(color: _outlineColor))
+            )
+          )
+        else
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              clipBehavior: Clip.none,
+              itemCount: _daftarInspirasi.length,
+              itemBuilder: (context, index) {
+                final artikel = _daftarInspirasi[index];
+                final bool hasImage = artikel['url_gambar'] != null && artikel['url_gambar'].toString().isNotEmpty;
+                final String kategori = artikel['kategori'] ?? 'Umum';
+                
+                return GestureDetector(
+                  onTap: () async {
+                    if (artikel['url_sumber'] != null && artikel['url_sumber'].toString().isNotEmpty) {
+                      final url = Uri.parse(artikel['url_sumber']);
+                      try {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      } catch (e) {
+                        print("Could not launch $url: $e");
+                      }
+                    } else if (artikel['konten_lengkap'] != null && artikel['konten_lengkap'].toString().isNotEmpty) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(artikel['judul']),
+                          content: SingleChildScrollView(child: Text(artikel['konten_lengkap'])),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup'))
+                          ],
                         ),
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: Container(
-                            margin: const EdgeInsets.all(12),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(8)),
-                            child: Text('Gizi', style: TextStyle(color: _primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Pentingnya Sayur Hijau untuk Tumbuh Kembang', style: TextStyle(color: _bgHitam, fontSize: 14, fontWeight: FontWeight.bold, height: 1.3)),
-                          const SizedBox(height: 8),
-                          Text('Dr. Kila • 3 min', style: TextStyle(color: _outlineColor, fontSize: 11)),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _primaryFixed,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.7), borderRadius: BorderRadius.circular(12)),
-                          child: Icon(Icons.bedtime, color: _primaryBlue, size: 20),
-                        ),
-                        const SizedBox(height: 12),
-                        Text('Jadwal Tidur Ideal Balita', style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('Bidan Sari • 5 min', style: TextStyle(color: _bgHitam.withOpacity(0.6), fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 200,
+                    margin: const EdgeInsets.only(right: 16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -848,27 +834,68 @@ class _HomePageState extends State<HomePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                            image: DecorationImage(
-                              image: NetworkImage('https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400'),
-                              fit: BoxFit.cover,
-                            ),
+                          height: 110,
+                          decoration: BoxDecoration(
+                            color: _primaryFixed,
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                          ),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (hasImage)
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                                  child: Image.network(
+                                    artikel['url_gambar'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(child: Icon(Icons.broken_image, color: _primaryBlue.withOpacity(0.5), size: 40)),
+                                  ),
+                                ),
+                              if (!hasImage)
+                                Center(child: Icon(Icons.article, color: _primaryBlue.withOpacity(0.5), size: 40)),
+                              Align(
+                                alignment: Alignment.topLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
+                                  child: Text(kategori, style: TextStyle(color: _primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Text('Cara Atasi Anak Susah Makan', style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold)),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  artikel['judul'] ?? 'Tips', 
+                                  style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold, height: 1.3),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  artikel['deskripsi_singkat'] ?? '', 
+                                  style: TextStyle(color: _outlineColor, fontSize: 11),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
                         )
                       ],
                     ),
                   ),
-                ],
-              ),
-            )
-          ],
-        )
+                );
+              },
+            ),
+          )
       ],
     );
   }
