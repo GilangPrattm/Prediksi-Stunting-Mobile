@@ -111,7 +111,8 @@ class _HomePageState extends State<HomePage> {
       if (resHistori.statusCode == 200) {
         final dataHistori = jsonDecode(resHistori.body);
         setState(() {
-          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed.toList();
+          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed
+              .toList();
           _isLoadingHistori = false;
         });
       } else {
@@ -146,7 +147,8 @@ class _HomePageState extends State<HomePage> {
     try {
       DateTime birthDate = DateTime.parse(tglLahirStr);
       DateTime today = DateTime.now();
-      int months = (today.year - birthDate.year) * 12 + today.month - birthDate.month;
+      int months =
+          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
       if (today.day < birthDate.day) {
         months--;
       }
@@ -154,7 +156,9 @@ class _HomePageState extends State<HomePage> {
       if (months < 12) return '$months Bulan';
       int years = months ~/ 12;
       int remainingMonths = months % 12;
-      return remainingMonths == 0 ? '$years Tahun' : '$years Tahun $remainingMonths Bulan';
+      return remainingMonths == 0
+          ? '$years Tahun'
+          : '$years Tahun $remainingMonths Bulan';
     } catch (e) {
       return '-';
     }
@@ -183,11 +187,11 @@ class _HomePageState extends State<HomePage> {
       _buildBeranda(),
       RiwayatPage(daftarAnak: _daftarAnak),
       const SizedBox(), // Index 2 di-intercept
-  MpasiPage(
+      MpasiPage(
         daftarAnak: _daftarAnak,
         anakTerpilihIndeks: _anakTerpilihIndeks,
       ),
-      const ProfilPage(), 
+      const ProfilPage(),
     ];
 
     return Scaffold(
@@ -264,9 +268,11 @@ class _HomePageState extends State<HomePage> {
   // ==== WIDGET TAB 0: BERANDA ====
   Widget _buildBeranda() {
     // Kondisi apakah data siap ditampilkan
-    bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
+    bool hasData =
+        !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
     // Kondisi apakah user ini benar-benar baru (data ibu belum lengkap atau belum ada data anak)
-    bool isUserBaru = !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
+    bool isUserBaru =
+        !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
 
     return RefreshIndicator(
       onRefresh: _fetchProfilDanAnak,
@@ -357,12 +363,21 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         'Selamat Pagi,',
-                        style: TextStyle(color: _bgHitam.withOpacity(0.7), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: _bgHitam.withOpacity(0.7),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       Text(
                         'Halo, $displayNama!',
-                        style: TextStyle(color: _bgHitam, fontSize: 24, fontWeight: FontWeight.w800),
-                        overflow: TextOverflow.ellipsis, // Menambahkan pemotong teks
+                        style: TextStyle(
+                          color: _bgHitam,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        overflow:
+                            TextOverflow.ellipsis, // Menambahkan pemotong teks
                         maxLines: 1, // Maksimal 1 baris
                       ),
                     ],
@@ -380,7 +395,11 @@ class _HomePageState extends State<HomePage> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withOpacity(0.8)),
             ),
-            child: Icon(Icons.notifications_outlined, color: _primaryBlue, size: 24),
+            child: Icon(
+              Icons.notifications_outlined,
+              color: _primaryBlue,
+              size: 24,
+            ),
           ),
         ],
       ),
@@ -408,14 +427,21 @@ class _HomePageState extends State<HomePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: _surfaceContainer, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: _surfaceContainer,
+              shape: BoxShape.circle,
+            ),
             child: Icon(Icons.family_restroom, size: 40, color: _primaryBlue),
           ),
           const SizedBox(height: 16),
           Text(
             'Selamat Datang di Stunt-Check!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: _bgHitam, fontSize: 18, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: _bgHitam,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -432,26 +458,36 @@ class _HomePageState extends State<HomePage> {
                 if (!_isProfilIbuLengkap) {
                   // Jika Profil Ibu belum lengkap, arahkan ke EditProfilPage
                   Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const EditProfilPage())
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfilPage(),
+                    ),
                   ).then((_) => _fetchProfilDanAnak());
                 } else {
                   // Jika Ibu sudah lengkap tapi Anak kosong, arahkan ke TambahAnakPage
                   Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const TambahAnakPage())
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TambahAnakPage(),
+                    ),
                   ).then((_) => _fetchProfilDanAnak());
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryBlue,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 elevation: 0,
               ),
               child: const Text(
                 'Lengkapi Data Sekarang',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -466,13 +502,17 @@ class _HomePageState extends State<HomePage> {
     String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
     String tinggiBadan = anakAktif['tinggi_badan']?.toString() ?? '-';
     String tglPeriksa = anakAktif['tgl_pemeriksaan'] ?? 'Belum dicek';
-    
-    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '').toString().toLowerCase();
+
+    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '')
+        .toString()
+        .toLowerCase();
     final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
     String kelamin = isLakiLaki ? 'Laki-Laki' : 'Perempuan';
 
     String statusGizi = anakAktif['status_gizi'] ?? 'Normal';
-    Color ringColor = statusGizi.toLowerCase() == 'normal' ? _primaryBlue : Colors.orange;
+    Color ringColor = statusGizi.toLowerCase() == 'normal'
+        ? _primaryBlue
+        : Colors.orange;
 
     return Container(
       padding: const EdgeInsets.all(20), // Padding dikurangi sedikit agar lega
@@ -499,13 +539,21 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text(
                       namaMurni,
-                      style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        color: _bgHitam,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$kelamin • $teksUsia',
-                      style: TextStyle(color: _primaryBlue, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: _primaryBlue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -514,7 +562,8 @@ class _HomePageState extends State<HomePage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _anakTerpilihIndeks = (_anakTerpilihIndeks + 1) % _daftarAnak.length;
+                      _anakTerpilihIndeks =
+                          (_anakTerpilihIndeks + 1) % _daftarAnak.length;
                     });
                   },
                   child: Container(
@@ -559,7 +608,7 @@ class _HomePageState extends State<HomePage> {
                       color: _surfaceContainer,
                     ),
                     CircularProgressIndicator(
-                      value: 0.75, 
+                      value: 0.75,
                       strokeWidth: 8,
                       strokeCap: StrokeCap.round,
                       color: ringColor,
@@ -570,12 +619,19 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Text(
                             statusGizi,
-                            style: TextStyle(color: _bgHitam, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: _bgHitam,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Status Gizi',
-                            style: TextStyle(color: _outlineColor, fontSize: 11),
+                            style: TextStyle(
+                              color: _outlineColor,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -583,19 +639,25 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              
+
               // FIX OVERFLOW 2: Kurangi gap dan beri Expanded pada Metric
               const SizedBox(width: 12), // Dikurangi dari 24 ke 12
-              
+
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _surfaceContainer),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                      ),
                     ],
                   ),
                   child: Row(
@@ -607,10 +669,13 @@ class _HomePageState extends State<HomePage> {
                           color: _primaryFixed,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.height, color: _primaryBlue, size: 20),
+                        child: Icon(
+                          Icons.height,
+                          color: _primaryBlue,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 8), // Gap diperkecil
-                      
                       // FIX OVERFLOW 2: Teks dibungkus dengan Expanded
                       Expanded(
                         child: Column(
@@ -618,8 +683,14 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text(
                               'TINGGI BADAN',
-                              style: TextStyle(color: _outlineColor, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                              overflow: TextOverflow.ellipsis, // Perlindungan tambahan
+                              style: TextStyle(
+                                color: _outlineColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow
+                                  .ellipsis, // Perlindungan tambahan
                               maxLines: 1,
                             ),
                             const SizedBox(height: 2),
@@ -631,14 +702,24 @@ class _HomePageState extends State<HomePage> {
                                 Flexible(
                                   child: Text(
                                     tinggiBadan,
-                                    style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800),
+                                    style: TextStyle(
+                                      color: _bgHitam,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Text('cm', style: TextStyle(color: _outlineColor, fontSize: 12)),
+                                Text(
+                                  'cm',
+                                  style: TextStyle(
+                                    color: _outlineColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -666,7 +747,12 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           'AKSI CEPAT',
-          style: TextStyle(color: _bgHitam, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+          style: TextStyle(
+            color: _bgHitam,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.0,
+          ),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
@@ -694,17 +780,30 @@ class _HomePageState extends State<HomePage> {
                     color: _primaryBlue,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
-                      BoxShadow(color: _primaryBlue.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5)),
+                      BoxShadow(
+                        color: _primaryBlue.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
                     ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.add_chart_rounded, color: Colors.white, size: 28),
+                      const Icon(
+                        Icons.add_chart_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       const Text(
                         'Cek Gizi\nSekarang',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700, height: 1.2),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
                       ),
                     ],
                   ),
@@ -722,7 +821,10 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: _surfaceContainer),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                      ),
                     ],
                   ),
                   child: Column(
@@ -731,12 +833,24 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: _primaryFixed, borderRadius: BorderRadius.circular(12)),
-                        child: Icon(Icons.restaurant_menu, color: _primaryBlue, size: 20),
+                        decoration: BoxDecoration(
+                          color: _primaryFixed,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.restaurant_menu,
+                          color: _primaryBlue,
+                          size: 20,
+                        ),
                       ),
                       Text(
                         'Rekomendasi\nResep',
-                        style: TextStyle(color: _bgHitam, fontSize: 14, fontWeight: FontWeight.w700, height: 1.2),
+                        style: TextStyle(
+                          color: _bgHitam,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
                       ),
                     ],
                   ),
@@ -760,9 +874,19 @@ class _HomePageState extends State<HomePage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Inspirasi Harian', style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800)),
+                Text(
+                  'Inspirasi Harian',
+                  style: TextStyle(
+                    color: _bgHitam,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text('Tips untuk tumbuh kembang optimal', style: TextStyle(color: _outlineColor, fontSize: 14)),
+                Text(
+                  'Tips untuk tumbuh kembang optimal',
+                  style: TextStyle(color: _outlineColor, fontSize: 14),
+                ),
               ],
             ),
             Container(
@@ -770,22 +894,39 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
-              child: Icon(Icons.arrow_forward_rounded, color: _primaryBlue, size: 20),
-            )
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                color: _primaryBlue,
+                size: 20,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
-        
+
         if (_isLoadingInspirasi)
-          const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: CircularProgressIndicator(),
+            ),
+          )
         else if (_daftarInspirasi.isEmpty)
           Center(
             child: Padding(
-              padding: const EdgeInsets.all(20), 
-              child: Text('Belum ada tips hari ini.', style: TextStyle(color: _outlineColor))
-            )
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'Belum ada tips hari ini.',
+                style: TextStyle(color: _outlineColor),
+              ),
+            ),
           )
         else
           SizedBox(
@@ -797,26 +938,38 @@ class _HomePageState extends State<HomePage> {
               itemCount: _daftarInspirasi.length,
               itemBuilder: (context, index) {
                 final artikel = _daftarInspirasi[index];
-                final bool hasImage = artikel['url_gambar'] != null && artikel['url_gambar'].toString().isNotEmpty;
+                final bool hasImage =
+                    artikel['url_gambar'] != null &&
+                    artikel['url_gambar'].toString().isNotEmpty;
                 final String kategori = artikel['kategori'] ?? 'Umum';
-                
+
                 return GestureDetector(
                   onTap: () async {
-                    if (artikel['url_sumber'] != null && artikel['url_sumber'].toString().isNotEmpty) {
+                    if (artikel['url_sumber'] != null &&
+                        artikel['url_sumber'].toString().isNotEmpty) {
                       final url = Uri.parse(artikel['url_sumber']);
                       try {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        await launchUrl(
+                          url,
+                          mode: LaunchMode.externalApplication,
+                        );
                       } catch (e) {
                         print("Could not launch $url: $e");
                       }
-                    } else if (artikel['konten_lengkap'] != null && artikel['konten_lengkap'].toString().isNotEmpty) {
+                    } else if (artikel['konten_lengkap'] != null &&
+                        artikel['konten_lengkap'].toString().isNotEmpty) {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: Text(artikel['judul']),
-                          content: SingleChildScrollView(child: Text(artikel['konten_lengkap'])),
+                          content: SingleChildScrollView(
+                            child: Text(artikel['konten_lengkap']),
+                          ),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup'))
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Tutup'),
+                            ),
                           ],
                         ),
                       );
@@ -828,7 +981,12 @@ class _HomePageState extends State<HomePage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,30 +995,63 @@ class _HomePageState extends State<HomePage> {
                           height: 110,
                           decoration: BoxDecoration(
                             color: _primaryFixed,
-                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24),
+                            ),
                           ),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
                               if (hasImage)
                                 ClipRRect(
-                                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(24),
+                                    topRight: Radius.circular(24),
+                                  ),
                                   child: Image.network(
                                     artikel['url_gambar'],
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Center(child: Icon(Icons.broken_image, color: _primaryBlue.withOpacity(0.5), size: 40)),
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: _primaryBlue.withOpacity(
+                                              0.5,
+                                            ),
+                                            size: 40,
+                                          ),
+                                        ),
                                   ),
                                 ),
                               if (!hasImage)
-                                Center(child: Icon(Icons.article, color: _primaryBlue.withOpacity(0.5), size: 40)),
+                                Center(
+                                  child: Icon(
+                                    Icons.article,
+                                    color: _primaryBlue.withOpacity(0.5),
+                                    size: 40,
+                                  ),
+                                ),
                               Align(
                                 alignment: Alignment.topLeft,
                                 child: Container(
                                   margin: const EdgeInsets.all(12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
-                                  child: Text(kategori, style: TextStyle(color: _primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    kategori,
+                                    style: TextStyle(
+                                      color: _primaryBlue,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -873,29 +1064,37 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  artikel['judul'] ?? 'Tips', 
-                                  style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold, height: 1.3),
+                                  artikel['judul'] ?? 'Tips',
+                                  style: TextStyle(
+                                    color: _bgHitam,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.3,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  artikel['deskripsi_singkat'] ?? '', 
-                                  style: TextStyle(color: _outlineColor, fontSize: 11),
+                                  artikel['deskripsi_singkat'] ?? '',
+                                  style: TextStyle(
+                                    color: _outlineColor,
+                                    fontSize: 11,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
                 );
               },
             ),
-          )
+          ),
       ],
     );
   }
