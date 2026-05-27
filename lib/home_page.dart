@@ -166,7 +166,6 @@ class _HomePageState extends State<HomePage> {
 
   void _onBottomNavTapped(int index) {
     if (index == 2) {
-      // Tombol tengah di-intercept langsung buka halaman Cek Stunting
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -175,7 +174,7 @@ class _HomePageState extends State<HomePage> {
             daftarAnak: _daftarAnak,
           ),
         ),
-      );
+      ).then((_) => _fetchProfilDanAnak()); // Refresh data saat kembali
     } else {
       setState(() => _selectedIndex = index);
     }
@@ -186,7 +185,7 @@ class _HomePageState extends State<HomePage> {
     final List<Widget> pages = [
       _buildBeranda(),
       RiwayatPage(daftarAnak: _daftarAnak),
-      const SizedBox(), // Index 2 di-intercept
+      const SizedBox(), 
       MpasiPage(
         daftarAnak: _daftarAnak,
         anakTerpilihIndeks: _anakTerpilihIndeks,
@@ -199,7 +198,6 @@ class _HomePageState extends State<HomePage> {
       body: pages[_selectedIndex],
       floatingActionButton: _selectedIndex == 0 ? _buildFAB() : null,
       extendBody: true,
-      // Memanggil file Footer terpisah yang baru dibuat
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedIndex,
         onTap: _onBottomNavTapped,
@@ -244,18 +242,29 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Stack(
           clipBehavior: Clip.none,
+          alignment: Alignment.center,
           children: [
-            const Icon(Icons.smart_toy, color: Colors.white, size: 30),
+            // [PERBAIKAN 2] Ikon Chatbot menggunakan gambar kustom Kila AI
+            ClipOval(
+              child: Image.asset(
+                'assets/images/kila_icon.png',
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => 
+                  const Icon(Icons.smart_toy, color: Colors.white, size: 30),
+              ),
+            ),
             Positioned(
-              top: -2,
-              right: -2,
+              top: 0,
+              right: 0,
               child: Container(
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: Colors.redAccent,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: _primaryBlue, width: 2),
                 ),
               ),
             ),
@@ -267,12 +276,8 @@ class _HomePageState extends State<HomePage> {
 
   // ==== WIDGET TAB 0: BERANDA ====
   Widget _buildBeranda() {
-    // Kondisi apakah data siap ditampilkan
-    bool hasData =
-        !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
-    // Kondisi apakah user ini benar-benar baru (data ibu belum lengkap atau belum ada data anak)
-    bool isUserBaru =
-        !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
+    bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
+    bool isUserBaru = !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
 
     return RefreshIndicator(
       onRefresh: _fetchProfilDanAnak,
@@ -282,10 +287,8 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HERO HEADER
             _buildHeroHeader(),
 
-            // MAIN CONTENT CANVAS
             Transform.translate(
               offset: const Offset(0, -30),
               child: Padding(
@@ -293,22 +296,19 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // KARTU TAMPILAN ATAS
                     if (_isLoadingAnak)
                       const Center(child: CircularProgressIndicator())
                     else if (isUserBaru)
-                      _buildKartuUserBaru() // Tampil jika user baru
+                      _buildKartuUserBaru() 
                     else
-                      _buildProgressHero(), // Tampil jika data lengkap
+                      _buildProgressHero(),
 
                     const SizedBox(height: 24),
 
-                    // AKSI CEPAT
                     if (hasData) _buildAksiCepat(),
 
                     const SizedBox(height: 24),
 
-                    // TIPS / INSPIRASI HARIAN
                     _buildTipsHarian(),
                   ],
                 ),
@@ -341,7 +341,6 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // FIX OVERFLOW 1: Membungkus Row Avatar & Text ke dalam Expanded
           Expanded(
             child: Row(
               children: [
@@ -356,7 +355,6 @@ class _HomePageState extends State<HomePage> {
                   child: Icon(Icons.person, color: _primaryBlue, size: 30),
                 ),
                 const SizedBox(width: 16),
-                // FIX OVERFLOW 1: Membungkus Column Teks ke dalam Expanded
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,9 +374,8 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
-                        overflow:
-                            TextOverflow.ellipsis, // Menambahkan pemotong teks
-                        maxLines: 1, // Maksimal 1 baris
+                        overflow: TextOverflow.ellipsis, 
+                        maxLines: 1, 
                       ),
                     ],
                   ),
@@ -406,7 +403,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // WIDGET KONDISI USER BARU (Diminta oleh Gilang)
   Widget _buildKartuUserBaru() {
     return Container(
       width: double.infinity,
@@ -454,9 +450,7 @@ class _HomePageState extends State<HomePage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // Logika pengarahan halaman untuk User Baru
                 if (!_isProfilIbuLengkap) {
-                  // Jika Profil Ibu belum lengkap, arahkan ke EditProfilPage
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -464,7 +458,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ).then((_) => _fetchProfilDanAnak());
                 } else {
-                  // Jika Ibu sudah lengkap tapi Anak kosong, arahkan ke TambahAnakPage
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -498,24 +491,53 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildProgressHero() {
     var anakAktif = _daftarAnak[_anakTerpilihIndeks];
+    String idAnakAktif = anakAktif['_id']?.toString() ?? anakAktif['id']?.toString() ?? '';
     String namaMurni = anakAktif['nama_anak'] ?? 'Tanpa Nama';
     String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
     String tinggiBadan = anakAktif['tinggi_badan']?.toString() ?? '-';
+    
+    // [PERBAIKAN 1]: Mengambil data Status Gizi dan Tgl Pemeriksaan dari histori (Real-time update)
+    var riwayatAnak = _daftarHistoriPrediksi.where((r) => (r['id_anak']?.toString() ?? '') == idAnakAktif).toList();
+    
+    String statusGiziRaw = 'Normal';
     String tglPeriksa = anakAktif['tgl_pemeriksaan'] ?? 'Belum dicek';
+    
+    if (riwayatAnak.isNotEmpty) {
+      statusGiziRaw = (riwayatAnak.first['hasil_prediksi'] ?? riwayatAnak.first['status'] ?? 'Normal').toString();
+      
+      String tgl = (riwayatAnak.first['tanggal'] ?? riwayatAnak.first['created_at'] ?? '').toString();
+      if (tgl.length > 10) tgl = tgl.substring(0, 10);
+      if (tgl.isNotEmpty) tglPeriksa = tgl;
+      
+      if(riwayatAnak.first['tinggi_badan'] != null) {
+        tinggiBadan = riwayatAnak.first['tinggi_badan'].toString();
+      }
+    } else {
+      statusGiziRaw = anakAktif['status_gizi'] ?? 'Normal';
+    }
 
-    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '')
-        .toString()
-        .toLowerCase();
+    String statusGizi = statusGiziRaw;
+    Color ringColor = const Color(0xFF10B981); // Emerald/Normal (Default)
+
+    if (statusGiziRaw.toLowerCase().contains('sangat stunting') || statusGiziRaw.toLowerCase().contains('sangat pendek') || statusGiziRaw.toLowerCase().contains('severely')) {
+      ringColor = const Color(0xFFE11D48); // Rose
+      statusGizi = "Sangat Stunting";
+    } else if (statusGiziRaw.toLowerCase().contains('stunting') || statusGiziRaw.toLowerCase().contains('pendek') || statusGiziRaw.toLowerCase().contains('berisiko')) {
+      ringColor = const Color(0xFFF59E0B); // Amber
+      statusGizi = "Stunting";
+    } else if (statusGiziRaw.toLowerCase().contains('tinggi')) {
+      ringColor = _primaryBlue; // Blue
+      statusGizi = "Tinggi";
+    } else {
+      statusGizi = "Normal";
+    }
+
+    final String jkRaw = (anakAktif['jenis_kelamin'] ?? '').toString().toLowerCase();
     final bool isLakiLaki = jkRaw == 'l' || jkRaw.contains('laki');
     String kelamin = isLakiLaki ? 'Laki-Laki' : 'Perempuan';
 
-    String statusGizi = anakAktif['status_gizi'] ?? 'Normal';
-    Color ringColor = statusGizi.toLowerCase() == 'normal'
-        ? _primaryBlue
-        : Colors.orange;
-
     return Container(
-      padding: const EdgeInsets.all(20), // Padding dikurangi sedikit agar lega
+      padding: const EdgeInsets.all(20), 
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(32),
@@ -617,20 +639,27 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            statusGizi,
-                            style: TextStyle(
-                              color: _bgHitam,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: Text(
+                              statusGizi,
+                              style: TextStyle(
+                                color: _bgHitam,
+                                fontSize: statusGizi.length > 8 ? 12 : 16, // Penyesuaian font jika teksnya panjang
+                                fontWeight: FontWeight.bold,
+                                height: 1.1,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             'Status Gizi',
                             style: TextStyle(
                               color: _outlineColor,
-                              fontSize: 11,
+                              fontSize: 10,
                             ),
                           ),
                         ],
@@ -640,8 +669,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // FIX OVERFLOW 2: Kurangi gap dan beri Expanded pada Metric
-              const SizedBox(width: 12), // Dikurangi dari 24 ke 12
+              const SizedBox(width: 12), 
 
               Expanded(
                 child: Container(
@@ -663,7 +691,7 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 40, // Diperkecil sedikit
+                        width: 40,
                         height: 40,
                         decoration: BoxDecoration(
                           color: _primaryFixed,
@@ -675,8 +703,7 @@ class _HomePageState extends State<HomePage> {
                           size: 20,
                         ),
                       ),
-                      const SizedBox(width: 8), // Gap diperkecil
-                      // FIX OVERFLOW 2: Teks dibungkus dengan Expanded
+                      const SizedBox(width: 8), 
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,8 +716,7 @@ class _HomePageState extends State<HomePage> {
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                               ),
-                              overflow: TextOverflow
-                                  .ellipsis, // Perlindungan tambahan
+                              overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                             ),
                             const SizedBox(height: 2),
@@ -698,7 +724,6 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.baseline,
                               textBaseline: TextBaseline.alphabetic,
                               children: [
-                                // Karena angka tinggi badan butuh prioritas, beri fleksibilitas
                                 Flexible(
                                   child: Text(
                                     tinggiBadan,
@@ -740,7 +765,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- WIDGET BAWAH (Sama dengan sebelumnya) ---
   Widget _buildAksiCepat() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -770,7 +794,7 @@ class _HomePageState extends State<HomePage> {
                         daftarAnak: _daftarAnak,
                       ),
                     ),
-                  );
+                  ).then((_) => _fetchProfilDanAnak());
                 },
                 child: Container(
                   width: 150,

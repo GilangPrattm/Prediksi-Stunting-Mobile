@@ -28,6 +28,11 @@ class _EditProfilPageState extends State<EditProfilPage> {
   bool _isLoading = true;
   bool _isSaving = false;
 
+  // --- LOGIKA CERDAS DROPDOWN ---
+  // List default, akan ditambahkan dinamis jika database memiliki nilai berbeda
+  List<String> _listPendidikan = ['SD', 'SMP', 'SMA', 'Diploma', 'S1', 'S2/S3'];
+  List<String> _listPekerjaan = ['Ibu Rumah Tangga', 'Karyawan Swasta', 'PNS / BUMN', 'Wiraswasta', 'Lainnya'];
+
   // --- WARNA TEMA KONSISTEN ---
   final Color _primaryBlue = const Color(0xFF1978E5);
   final Color _bgHitam = const Color(0xFF0B1C30);
@@ -41,7 +46,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     _fetchKombinasiProfil();
   }
 
-  // Tarik Data Akun sekaligus Data Kesehatan
   Future<void> _fetchKombinasiProfil() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -61,12 +65,13 @@ class _EditProfilPageState extends State<EditProfilPage> {
         setState(() {
           _nameController.text = dataAkun['name'] ?? '';
           _emailController.text = dataAkun['email'] ?? '';
-          _teleponController.text = dataAkun['telepon'] ?? '';
+          _teleponController.text = dataAkun['no_hp'] ?? dataAkun['telepon'] ?? '';
         });
       }
 
       if (responseIbu.statusCode == 200) {
-        final dataIbu = jsonDecode(responseIbu.body);
+        final responseBody = jsonDecode(responseIbu.body);
+        final dataIbu = responseBody['data'];
         if (dataIbu is List && dataIbu.isNotEmpty) {
           final firstIbu = dataIbu[0];
           setState(() {
@@ -76,8 +81,19 @@ class _EditProfilPageState extends State<EditProfilPage> {
               _tglLahirController.text = "01/01/$birthYear";
             }
             _tinggiController.text = firstIbu['tinggi_ibu']?.toString() ?? '';
-            _pendidikanPilih = firstIbu['pendidikan_ibu'];
-            _pekerjaanPilih = firstIbu['pekerjaan_ibu'];
+            
+            // [PERBAIKAN BUG DROP-DOWN]: Mencegah error jika data DB tidak ada di list default
+            String? pendDB = firstIbu['pendidikan_ibu'];
+            if (pendDB != null && pendDB.isNotEmpty) {
+              if (!_listPendidikan.contains(pendDB)) _listPendidikan.add(pendDB);
+              _pendidikanPilih = pendDB;
+            }
+
+            String? pekDB = firstIbu['pekerjaan_ibu'];
+            if (pekDB != null && pekDB.isNotEmpty) {
+              if (!_listPekerjaan.contains(pekDB)) _listPekerjaan.add(pekDB);
+              _pekerjaanPilih = pekDB;
+            }
           });
         }
       }
@@ -142,7 +158,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         'telepon': _teleponController.text,
       };
 
-      await http.put(
+      final responseAkun = await http.put(
         Uri.parse('$_baseUrl/profil'),
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +167,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         body: jsonEncode(payloadAkun),
       );
 
-      await http.post(
+      final responseIbu = await http.post(
         Uri.parse('$_baseUrl/profil-ibu'),
         headers: {
           'Content-Type': 'application/json',
@@ -164,6 +180,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
           'pekerjaan_ibu': _pekerjaanPilih ?? '',
         }),
       );
+
+      if (responseAkun.statusCode != 200 || (responseIbu.statusCode != 200 && responseIbu.statusCode != 201)) {
+         throw Exception("Gagal menyimpan data ke server.");
+      }
 
       setState(() => _isSaving = false);
       if (!mounted) return;
@@ -193,11 +213,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
       appBar: AppBar(
         title: Text(
           'Edit Profil Ibu',
-          style: TextStyle(
-            color: _bgHitam,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: _bgHitam, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         backgroundColor: _surfaceBg,
         iconTheme: IconThemeData(color: _bgHitam),
@@ -212,7 +228,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Info Banner
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -236,7 +251,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Form Container Berbayang
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -252,30 +266,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     ),
                     child: Column(
                       children: [
-                        _buildInputGroup(
-                          'Nama Lengkap',
-                          _nameController,
-                          Icons.person_outline,
-                          false,
-                          hint: 'Masukkan nama lengkap',
-                        ),
-                        _buildInputGroup(
-                          'Alamat Email',
-                          _emailController,
-                          Icons.email_outlined,
-                          true, // Email biasanya tidak bisa diubah langsung
-                          hint: 'Email Bunda',
-                        ),
-                        _buildInputGroup(
-                          'Nomor Telepon',
-                          _teleponController,
-                          Icons.phone_outlined,
-                          false,
-                          type: TextInputType.phone,
-                          hint: 'Contoh: 08123456789',
-                        ),
+                        _buildInputGroup('Nama Lengkap', _nameController, Icons.person_outline, false, hint: 'Masukkan nama lengkap'),
+                        _buildInputGroup('Alamat Email', _emailController, Icons.email_outlined, true, hint: 'Email Bunda'),
+                        _buildInputGroup('Nomor Telepon', _teleponController, Icons.phone_outlined, false, type: TextInputType.phone, hint: 'Contoh: 08123456789'),
 
-                        // Tanggal Lahir (Dihitung ke Usia di background)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
@@ -302,16 +296,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           ),
                         ),
 
-                        _buildInputGroup(
-                          'Tinggi Badan (cm)',
-                          _tinggiController,
-                          Icons.straighten_outlined,
-                          false,
-                          type: TextInputType.number,
-                          hint: 'Masukkan tinggi badan',
-                        ),
+                        _buildInputGroup('Tinggi Badan (cm)', _tinggiController, Icons.straighten_outlined, false, type: TextInputType.number, hint: 'Masukkan tinggi badan'),
 
-                        // Dropdown Pendidikan
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
@@ -331,7 +317,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                 ),
                                 hint: Text('Pilih Pendidikan', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
                                 style: TextStyle(color: _bgHitam, fontSize: 14),
-                                items: ['SD', 'SMP', 'SMA', 'Diploma', 'S1', 'S2/S3'].map((String val) {
+                                items: _listPendidikan.map((String val) {
                                   return DropdownMenuItem(value: val, child: Text(val));
                                 }).toList(),
                                 onChanged: (val) => setState(() => _pendidikanPilih = val),
@@ -340,7 +326,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           ),
                         ),
 
-                        // Dropdown Pekerjaan
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Column(
@@ -360,7 +345,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                 ),
                                 hint: Text('Pilih Pekerjaan', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
                                 style: TextStyle(color: _bgHitam, fontSize: 14),
-                                items: ['Ibu Rumah Tangga', 'Karyawan Swasta', 'PNS / BUMN', 'Wiraswasta', 'Lainnya'].map((String val) {
+                                items: _listPekerjaan.map((String val) {
                                   return DropdownMenuItem(value: val, child: Text(val));
                                 }).toList(),
                                 onChanged: (val) => setState(() => _pekerjaanPilih = val),
@@ -371,10 +356,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
-                  // Tombol Simpan
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -382,25 +364,12 @@ class _EditProfilPageState extends State<EditProfilPage> {
                       onPressed: _isSaving ? null : _updateProfil,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primaryBlue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 2,
                       ),
                       child: _isSaving
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                            )
-                          : const Text(
-                              'Simpan Perubahan',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                          : const Text('Simpan Perubahan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -413,25 +382,11 @@ class _EditProfilPageState extends State<EditProfilPage> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: _outlineColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      child: Text(text, style: TextStyle(color: _outlineColor, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 
-  Widget _buildInputGroup(
-    String label,
-    TextEditingController ctrl,
-    IconData icon,
-    bool isReadOnly, {
-    TextInputType type = TextInputType.text,
-    String hint = '',
-  }) {
+  Widget _buildInputGroup(String label, TextEditingController ctrl, IconData icon, bool isReadOnly, {TextInputType type = TextInputType.text, String hint = ''}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -442,29 +397,16 @@ class _EditProfilPageState extends State<EditProfilPage> {
             controller: ctrl,
             keyboardType: type,
             readOnly: isReadOnly,
-            style: TextStyle(
-              color: isReadOnly ? _outlineColor : _bgHitam,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: isReadOnly ? _outlineColor : _bgHitam, fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-              prefixIcon: Icon(
-                icon,
-                color: isReadOnly ? Colors.grey.shade400 : _primaryBlue.withOpacity(0.7),
-                size: 22,
-              ),
+              prefixIcon: Icon(icon, color: isReadOnly ? Colors.grey.shade400 : _primaryBlue.withOpacity(0.7), size: 22),
               filled: true,
               fillColor: isReadOnly ? Colors.grey.shade100 : _inputBg,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryBlue, width: 1.5),
-              ),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _primaryBlue, width: 1.5)),
             ),
           ),
         ],

@@ -30,7 +30,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
   String? _anakTerpilihId;
   String _anakTerpilihNama = 'Semua Anak';
 
-
   @override
   void initState() {
     super.initState();
@@ -93,10 +92,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
         centerTitle: false,
         title: Row(
           children: [
-            Icon(Icons.child_care, color: _primaryBlue, size: 28),
+            Icon(Icons.history_rounded, color: _primaryBlue, size: 28),
             const SizedBox(width: 8),
             Text(
-              'Stunt-Check',
+              'Halaman Riwayat', // [PERBAIKAN 1]: Judul diganti
               style: TextStyle(
                 color: _primaryBlue,
                 fontWeight: FontWeight.w900,
@@ -142,7 +141,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     _buildGrafikCard(),
                     const SizedBox(height: 30),
                     _buildRiwayatList(),
-                    const SizedBox(height: 40), // Spacer bawah
+                    const SizedBox(height: 40), 
                   ] else ...[
                     _buildKosong(),
                   ],
@@ -166,9 +165,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
     int sangatStunting = 0;
     
     for (var r in _riwayatPrediksi) {
-      String status = (r['status'] ?? '').toString().toLowerCase();
-      if (status.contains('sangat stunting') || status.contains('sangat pendek') || status.contains('severely stunted')) sangatStunting++;
-      else if (status.contains('stunting') || status.contains('pendek')) stunting++;
+      // [PERBAIKAN 3]: Mengambil data dari 'hasil_prediksi' terlebih dahulu (menyesuaikan versi ML terbaru)
+      String status = (r['hasil_prediksi'] ?? r['status'] ?? '').toString().toLowerCase();
+      if (status.contains('sangat stunting') || status.contains('sangat pendek') || status.contains('severely')) sangatStunting++;
+      else if (status.contains('stunting') || status.contains('pendek') || status.contains('berisiko')) stunting++;
       else if (status.contains('tinggi')) tinggi++;
       else normal++;
     }
@@ -192,8 +192,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
             runSpacing: 8,
             children: [
               _buildStatBadge('Normal: $normal', const Color(0xFF10B981), const Color(0xFFD1FAE5)),
-              if (tinggi > 0)
-                _buildStatBadge('Tinggi: $tinggi', _primaryBlue, _primaryLight),
+              // [PERBAIKAN 2]: Menghilangkan if (tinggi > 0) agar kategori Tinggi paten muncul
+              _buildStatBadge('Tinggi: $tinggi', _primaryBlue, _primaryLight),
               _buildStatBadge('Stunting: $stunting', const Color(0xFFF59E0B), const Color(0xFFFEF3C7)),
               _buildStatBadge('Sangat Stunting: $sangatStunting', const Color(0xFFE11D48), const Color(0xFFFFE4E6)),
             ],
@@ -255,11 +255,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _bgHitam)),
                   const SizedBox(height: 2),
                   Text(
-                      'Tinggi Badan (cm) per Bulan',
+                      'Tinggi Badan (cm) per Pemeriksaan',
                       style: TextStyle(fontSize: 12, color: _outlineColor)),
                 ],
               ),
-
             ],
           ),
           const SizedBox(height: 30),
@@ -274,16 +273,20 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-
-
   Widget _buildFlChart() {
+    // [PERBAIKAN 4]: Membatasi data agar hanya menampilkan maksimal 20 data terakhir
+    List<dynamic> limitedData = _dataPengukuran;
+    if (limitedData.length > 20) {
+      limitedData = limitedData.sublist(limitedData.length - 20);
+    }
+
     List<FlSpot> spots = [];
-    double maxX = _dataPengukuran.length.toDouble();
+    double maxX = limitedData.length.toDouble();
     double maxY = 0;
     double minY = double.infinity;
 
-    for (int i = 0; i < _dataPengukuran.length; i++) {
-      var item = _dataPengukuran[i];
+    for (int i = 0; i < limitedData.length; i++) {
+      var item = limitedData[i];
       double val = double.tryParse(item['tinggi'].toString()) ?? 0;
       
       if (val > maxY) maxY = val;
@@ -294,13 +297,16 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     maxY = maxY + (maxY * 0.1);
     minY = minY > 5 ? minY - 5 : 0;
+    
+    // Interval X-Axis cerdas: Jika data banyak, lewati beberapa label agar tidak menumpuk
+    double xInterval = limitedData.length > 10 ? 2 : 1;
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: 20,
+          horizontalInterval: 10, // Grid garis horizontal diperlebar agar estetik
           getDrawingHorizontalLine: (value) => FlLine(
             color: Colors.grey.shade200,
             strokeWidth: 1,
@@ -315,11 +321,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
             sideTitles: SideTitles(
               showTitles: true,
               interval: 20,
-              reservedSize: 30,
+              reservedSize: 35,
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: TextStyle(color: _outlineColor, fontSize: 11),
+                  style: TextStyle(color: _outlineColor, fontSize: 11, fontWeight: FontWeight.bold),
                 );
               },
             ),
@@ -327,14 +333,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: 1,
+              interval: xInterval, // Interval yang disesuaikan
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= 0 && value.toInt() < _dataPengukuran.length) {
+                if (value.toInt() >= 0 && value.toInt() < limitedData.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      'Bln ${value.toInt() + 1}',
-                      style: TextStyle(color: _outlineColor, fontSize: 11),
+                      'P.${value.toInt() + 1}', // P = Pemeriksaan
+                      style: TextStyle(color: _outlineColor, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   );
                 }
@@ -352,19 +358,20 @@ class _RiwayatPageState extends State<RiwayatPage> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
+            curveSmoothness: 0.35, // Membuat garis sedikit lebih melengkung alami
             color: _primaryBlue,
-            barWidth: 3,
+            barWidth: 3.5, // Garis sedikit lebih tebal
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
-                  FlDotCirclePainter(radius: 4, color: _primaryBlue, strokeWidth: 2, strokeColor: Colors.white),
+                  FlDotCirclePainter(radius: 4.5, color: _primaryBlue, strokeWidth: 2, strokeColor: Colors.white),
             ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  _primaryBlue.withOpacity(0.3),
+                  _primaryBlue.withOpacity(0.25),
                   _primaryBlue.withOpacity(0.0),
                 ],
                 begin: Alignment.topCenter,
@@ -408,10 +415,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
     String tglStr = data['tanggal'] ?? data['created_at'] ?? '';
     if (tglStr.length > 10) tglStr = tglStr.substring(0, 10);
     
-    String rawStatus = (data['status'] ?? 'Normal').toString();
+    // [PERBAIKAN 3]: Gunakan 'hasil_prediksi' sebagai key prioritas
+    String rawStatus = (data['hasil_prediksi'] ?? data['status'] ?? 'Normal').toString();
     String status = rawStatus;
     
-    // Tema Warna berdasarkan Status Gizi (Sesuai HTML + Blue Theme)
+    // Tema Warna berdasarkan Status Gizi
     Color badgeColor = const Color(0xFF10B981); // Emerald/Normal
     Color badgeBg = const Color(0xFFD1FAE5);
     IconData icon = Icons.check_circle;
@@ -431,12 +439,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
       badgeBg = _primaryLight;
       icon = Icons.height;
       status = "Tinggi";
+    } else {
+      status = "Normal";
     }
 
     double probabilitas = double.tryParse(data['probabilitas']?.toString() ?? '1') ?? 1.0;
     int probPersen = (probabilitas * 100).toInt();
 
-    // Data Anak untuk diteruskan ke CekStuntingPage/HasilPrediksiPage
+    // Data Anak untuk diteruskan
     final String idAnak = data['id_anak']?.toString() ?? _anakTerpilihId ?? '';
     final anakData = widget.daftarAnak.firstWhere(
       (a) => (a['_id'] ?? a['id'] ?? '').toString() == idAnak,
@@ -452,8 +462,9 @@ class _RiwayatPageState extends State<RiwayatPage> {
               namaAnak: _anakTerpilihNama,
               hasilPrediksi: status,
               probabilitas: probabilitas,
-
               tinggiBadan: (anakData['tinggi_badan'] as num?)?.toDouble(),
+              rekomendasiTeks: data['rekomendasi_teks'],
+              rekomendasiTerstruktur: data['rekomendasi_terstruktur'],
             ),
           ),
         );
@@ -478,7 +489,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Nomor Urut (Mirip desain HTML)
+                // Nomor Urut
                 Container(
                   width: 45,
                   height: 45,

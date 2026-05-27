@@ -19,10 +19,11 @@ class MpasiPage extends StatefulWidget {
 }
 
 class _MpasiPageState extends State<MpasiPage> {
-  final Color _primaryBlue = const Color(0xFF006A63); // Menggunakan Teal agar seragam
-  final Color _bgHitam = const Color(0xFF191C1D);
-  final Color _surfaceBg = const Color(0xFFF8FAFA);
-  final Color _outlineColor = const Color(0xFF6D7A77);
+  // --- TEMA WARNA BIRU KONSISTEN ---
+  final Color _primaryBlue = const Color(0xFF1978E5); 
+  final Color _bgHitam = const Color(0xFF0B1C30);
+  final Color _surfaceBg = const Color(0xFFF8F9FF);
+  final Color _outlineColor = const Color(0xFF717785);
   final Color _cardBg = Colors.white;
 
   String _searchQuery = '';
@@ -31,7 +32,6 @@ class _MpasiPageState extends State<MpasiPage> {
   
   bool _isLoading = true;
   List<Map<String, dynamic>> _semuaResep = [];
-  String _rekomendasiTeksUtama = 'Menganalisis nutrisi terbaik untuk si Kecil...';
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class _MpasiPageState extends State<MpasiPage> {
   // --- FETCH API HISTORY LARAVEL ---
   Future<void> _fetchHistoriMpasi() async {
     if (widget.daftarAnak.isEmpty) {
-      setState(() => _isLoading = false);
+      if(mounted) setState(() => _isLoading = false);
       return;
     }
 
@@ -51,7 +51,7 @@ class _MpasiPageState extends State<MpasiPage> {
       String? token = prefs.getString('token');
       
       var anakAktif = widget.daftarAnak[widget.anakTerpilihIndeks];
-      String idAnak = anakAktif['_id'] ?? anakAktif['id'] ?? '';
+      String idAnak = anakAktif['_id']?.toString() ?? anakAktif['id']?.toString() ?? '';
 
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/riwayat/$idAnak'),
@@ -62,45 +62,60 @@ class _MpasiPageState extends State<MpasiPage> {
         final data = jsonDecode(response.body);
         List<dynamic> riwayatList = data['data'] ?? [];
 
-        // Cari riwayat terbaru yang memiliki rekomendasi_data
         var riwayatTerbaru = riwayatList.firstWhere(
-          (item) => item['rekomendasi_data'] != null && (item['rekomendasi_data'] as List).isNotEmpty,
+          (item) => (item['rekomendasi_terstruktur'] != null && (item['rekomendasi_terstruktur'] as List).isNotEmpty) ||
+                    (item['rekomendasi_data'] != null && (item['rekomendasi_data'] as List).isNotEmpty),
           orElse: () => null,
         );
 
         if (riwayatTerbaru != null) {
-          List<dynamic> struktur = riwayatTerbaru['rekomendasi_data'];
+          List<dynamic> struktur = riwayatTerbaru['rekomendasi_terstruktur'] ?? riwayatTerbaru['rekomendasi_data'] ?? [];
           List<Map<String, dynamic>> resepDiekstrak = [];
           Set<String> setKategori = {'Semua'};
 
           for (var kategori in struktur) {
-            String nutrisi = kategori['nutrisi'] ?? 'Menu Lainnya';
+            String nutrisi = kategori['nutrisi'] ?? kategori['kategori'] ?? 'Menu Lainnya';
             setKategori.add(nutrisi);
             
-            for (var makanan in (kategori['makanan'] ?? [])) {
-              resepDiekstrak.add({
-                'kategori': nutrisi,
-                'nama_makanan': makanan['nama_makanan'] ?? 'Tanpa Nama',
-                'deskripsi': makanan['deskripsi'] ?? '',
-                'img': _getImageAsset(makanan['nama_makanan'] ?? ''),
-              });
+            for (var makanan in (kategori['makanan'] ?? kategori['menu'] ?? [])) {
+              // [PERBAIKAN LOGIKA]: Membaca berbagai kemungkinan nama kunci (key) dari Gemini AI
+              if (makanan is Map) {
+                String namaMakanan = makanan['nama_makanan'] ?? makanan['nama'] ?? makanan['menu'] ?? makanan['judul'] ?? 'Tanpa Nama';
+                String deskripsi = makanan['deskripsi'] ?? makanan['manfaat'] ?? makanan['keterangan'] ?? 'Menu sehat rekomendasi AI untuk si Kecil.';
+                
+                resepDiekstrak.add({
+                  'kategori': nutrisi,
+                  'nama_makanan': namaMakanan,
+                  'deskripsi': deskripsi,
+                  'img': _getImageAsset(namaMakanan),
+                });
+              } else if (makanan is String) {
+                // Jaga-jaga jika AI mengembalikan data berupa list string langsung, bukan object
+                resepDiekstrak.add({
+                  'kategori': nutrisi,
+                  'nama_makanan': makanan,
+                  'deskripsi': 'Sangat disarankan untuk melengkapi kebutuhan gizi anak Anda.',
+                  'img': _getImageAsset(makanan),
+                });
+              }
             }
           }
 
-          setState(() {
-            _semuaResep = resepDiekstrak;
-            _filters = setKategori.toList();
-            _rekomendasiTeksUtama = riwayatTerbaru['rekomendasi_ai'] ?? 'Berikut adalah menu MPASI yang dirancang khusus oleh AI berdasarkan kondisi terkini anak Anda.';
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _semuaResep = resepDiekstrak;
+              _filters = setKategori.toList();
+              _isLoading = false;
+            });
+          }
         } else {
-          setState(() => _isLoading = false);
+          if (mounted) setState(() => _isLoading = false);
         }
       } else {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -118,7 +133,6 @@ class _MpasiPageState extends State<MpasiPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter data untuk Grid
     List<Map<String, dynamic>> resepTampil = _semuaResep.where((resep) {
       bool masukKategori = _selectedFilter == 'Semua' || resep['kategori'] == _selectedFilter;
       bool masukPencarian = resep['nama_makanan'].toLowerCase().contains(_searchQuery.toLowerCase());
@@ -129,20 +143,16 @@ class _MpasiPageState extends State<MpasiPage> {
       backgroundColor: _surfaceBg,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER & INFO
             Padding(
               padding: const EdgeInsets.only(top: 20, left: 24, right: 24, bottom: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Menu MPASI AI', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: _bgHitam, letterSpacing: -0.5)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: const Color(0xFFEAF1FF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFDCE9FF))),
-                    child: Text(_rekomendasiTeksUtama, style: TextStyle(color: _bgHitam.withOpacity(0.8), fontSize: 13, height: 1.5, fontStyle: FontStyle.italic)),
-                  ),
+                  const SizedBox(height: 4),
+                  Text('Rekomendasi nutrisi harian khusus untuk si Kecil.', style: TextStyle(color: _outlineColor, fontSize: 13)),
                 ],
               ),
             ),
@@ -193,18 +203,15 @@ class _MpasiPageState extends State<MpasiPage> {
               ),
             ),
 
-            // GRID BENTO RESEP
+            // LISTVIEW BENTO RESEP
             Expanded(
               child: _isLoading 
                 ? Center(child: CircularProgressIndicator(color: _primaryBlue))
                 : resepTampil.isEmpty 
                   ? Center(child: Text('Belum ada rekomendasi. Lakukan Cek Stunting terlebih dahulu.', style: TextStyle(color: _outlineColor)))
-                  : GridView.builder(
+                  : ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.65,
-                      ),
                       itemCount: resepTampil.length,
                       itemBuilder: (context, index) {
                         return _buildRecipeCard(resepTampil[index]);
@@ -219,45 +226,58 @@ class _MpasiPageState extends State<MpasiPage> {
 
   Widget _buildRecipeCard(Map<String, dynamic> data) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [BoxShadow(color: _primaryBlue.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Box
-          Expanded(
-            flex: 4,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-              child: Image.asset(
-                data['img'],
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade100, child: Icon(Icons.fastfood, color: Colors.grey.shade400)),
+          // Image Box (Kiri)
+          ClipRRect(
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+            child: Image.asset(
+              data['img'],
+              width: 120, // Ukuran gambar proporsional
+              height: 135,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 120,
+                height: 135,
+                color: Colors.grey.shade100, 
+                child: Icon(Icons.fastfood, color: Colors.grey.shade400, size: 40)
               ),
             ),
           ),
-          // Content Box
+          // Content Box (Kanan - Memanjang)
           Expanded(
-            flex: 6,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: const Color(0xFFEFF4FF), borderRadius: BorderRadius.circular(8)),
-                    child: Text(data['kategori'], style: TextStyle(fontSize: 9, color: _primaryBlue, fontWeight: FontWeight.bold)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0xFFEFF4FF), borderRadius: BorderRadius.circular(6)),
+                    child: Text(data['kategori'], style: TextStyle(fontSize: 10, color: _primaryBlue, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    data['nama_makanan'], 
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: _bgHitam, height: 1.2), 
+                    maxLines: 2, 
+                    overflow: TextOverflow.ellipsis
                   ),
                   const SizedBox(height: 6),
-                  Text(data['nama_makanan'], style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: _bgHitam, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(data['deskripsi'], style: TextStyle(fontSize: 10, color: _outlineColor, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  Text(
+                    data['deskripsi'], 
+                    style: TextStyle(fontSize: 12, color: _outlineColor, height: 1.4), 
+                    maxLines: 3, 
+                    overflow: TextOverflow.ellipsis
+                  ),
                 ],
               ),
             ),
