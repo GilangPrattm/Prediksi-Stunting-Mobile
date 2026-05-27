@@ -18,7 +18,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
   bool _isLoading               = false;
   bool _isPasswordHidden        = true;
   bool _isConfirmPasswordHidden = true;
-  String? _passwordError;
+  
+  // Variabel untuk menampung pesan error (Sweet Alert Inline)
+  String? _passwordReqError;
+  String? _passwordMatchError;
 
   final AuthService _authService = AuthService();
 
@@ -27,15 +30,15 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
   late Animation<Offset>  _slideAnim;
 
   // ── Warna dari HTML (register theme – blue) ──────────────────
-  static const Color kPrimary          = Color(0xFF005AB5); // primary
-  static const Color kBackground       = Color(0xFFF9F9FF); // background
-  static const Color kSurface          = Color(0xFFFFFFFF); // surface-container-lowest
-  static const Color kSurfaceBright    = Color(0xFFF9F9FF); // surface-bright
-  static const Color kSurfaceContainer = Color(0xFFEBEDF8); // surface-container
-  static const Color kOnSurface        = Color(0xFF181C23); // on-surface
-  static const Color kOnSurfaceVariant = Color(0xFF414753); // on-surface-variant
-  static const Color kOutlineVariant   = Color(0xFFC1C6D5); // outline-variant
-  static const Color kError            = Color(0xFFBA1A1A); // error
+  static const Color kPrimary          = Color(0xFF005AB5); 
+  static const Color kBackground       = Color(0xFFF9F9FF); 
+  static const Color kSurface          = Color(0xFFFFFFFF); 
+  static const Color kSurfaceBright    = Color(0xFFF9F9FF); 
+  static const Color kSurfaceContainer = Color(0xFFEBEDF8); 
+  static const Color kOnSurface        = Color(0xFF181C23); 
+  static const Color kOnSurfaceVariant = Color(0xFF414753); 
+  static const Color kOutlineVariant   = Color(0xFFC1C6D5); 
+  static const Color kError            = Color(0xFFBA1A1A); 
 
   @override
   void initState() {
@@ -61,8 +64,17 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // ── Logic ──────────────────────────────────────────────────────
+  // ── Logic Validasi (Real-time) ─────────────────────────────────
+  String? _checkPasswordStrength(String value) {
+    if (value.isEmpty) return 'Password tidak boleh kosong.';
+    if (value.length < 8) return 'Password minimal 8 karakter.';
+    if (!value.contains(RegExp(r'[A-Z]'))) return 'Password harus mengandung huruf besar.';
+    if (!value.contains(RegExp(r'[0-9]'))) return 'Password harus mengandung angka.';
+    return null; // Null berarti lulus validasi
+  }
+
   void _prosesDaftar() async {
+    // Cek field kosong
     if (_nameController.text.isEmpty ||
         _noHpController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -72,13 +84,25 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       return;
     }
 
-    if (_passwordController.text != _passwordConfirmController.text) {
-      setState(() => _passwordError = 'Password tidak cocok.');
+    // Cek kekuatan password (jaga-jaga jika terlewat di real-time)
+    String? reqError = _checkPasswordStrength(_passwordController.text);
+    if (reqError != null) {
+      setState(() => _passwordReqError = reqError);
       return;
     }
-    setState(() => _passwordError = null);
 
-    setState(() => _isLoading = true);
+    // Cek kecocokan password
+    if (_passwordController.text != _passwordConfirmController.text) {
+      setState(() => _passwordMatchError = 'Password tidak cocok.');
+      return;
+    }
+
+    setState(() {
+      _passwordReqError = null;
+      _passwordMatchError = null;
+      _isLoading = true;
+    });
+
     var respons = await _authService.register(
       _nameController.text,
       _noHpController.text,
@@ -86,6 +110,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       _passwordController.text,
       _passwordConfirmController.text,
     );
+    
     setState(() => _isLoading = false);
 
     if (!mounted) return;
@@ -114,7 +139,6 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: kBackground,
       body: Container(
-        // Gradient background: primary-fixed (#D7E3FF) → white
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -148,11 +172,9 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ── Header ────────────────────────────
                           _buildHeader(),
                           const SizedBox(height: 28),
 
-                          // ── Form Fields ───────────────────────
                           _buildLabel('Nama Lengkap'),
                           const SizedBox(height: 6),
                           _buildTextField(
@@ -190,9 +212,36 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             prefixIcon: Icons.lock_outline_rounded,
                             isPassword: true,
                             isHidden: _isPasswordHidden,
-                            onVisibilityToggle: () =>
-                                setState(() => _isPasswordHidden = !_isPasswordHidden),
+                            hasError: _passwordReqError != null,
+                            onVisibilityToggle: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
+                            onChanged: (val) {
+                              // Validasi Real-time saat mengetik
+                              setState(() {
+                                _passwordReqError = _checkPasswordStrength(val);
+                                // Cek kecocokan jika konfirmasi sudah diisi
+                                if (_passwordConfirmController.text.isNotEmpty) {
+                                  _passwordMatchError = (val != _passwordConfirmController.text) ? 'Password tidak cocok.' : null;
+                                }
+                              });
+                            }
                           ),
+                          
+                          // [PERBAIKAN 2]: Sweet Alert Inline (Peringatan merah di bawah input Password)
+                          if (_passwordReqError != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: kError, size: 16),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    _passwordReqError!,
+                                    style: const TextStyle(color: kError, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 16),
 
                           _buildLabel('Konfirmasi Password'),
@@ -203,26 +252,26 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             prefixIcon: Icons.lock_outline_rounded,
                             isPassword: true,
                             isHidden: _isConfirmPasswordHidden,
-                            hasError: _passwordError != null,
-                            onVisibilityToggle: () => setState(
-                                () => _isConfirmPasswordHidden = !_isConfirmPasswordHidden),
+                            hasError: _passwordMatchError != null,
+                            onVisibilityToggle: () => setState(() => _isConfirmPasswordHidden = !_isConfirmPasswordHidden),
+                            onChanged: (val) {
+                              // Validasi Real-time ketidakcocokan password
+                              setState(() {
+                                _passwordMatchError = (val != _passwordController.text) ? 'Password tidak cocok.' : null;
+                              });
+                            }
                           ),
 
-                          // Password error
-                          if (_passwordError != null) ...[
+                          // [PERBAIKAN 2]: Sweet Alert Inline untuk konfirmasi password yang beda
+                          if (_passwordMatchError != null) ...[
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.error_outline_rounded,
-                                    color: kError, size: 16),
+                                const Icon(Icons.error_outline_rounded, color: kError, size: 16),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _passwordError!,
-                                  style: const TextStyle(
-                                    color: kError,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  _passwordMatchError!,
+                                  style: const TextStyle(color: kError, fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -230,7 +279,6 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
 
                           const SizedBox(height: 28),
 
-                          // ── Daftar Button ─────────────────────
                           SizedBox(
                             height: 56,
                             child: ElevatedButton(
@@ -246,41 +294,26 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                                   ? const SizedBox(
                                       height: 22,
                                       width: 22,
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white, strokeWidth: 2.5),
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                                     )
                                   : const Text(
                                       'Daftar Sekarang',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                        letterSpacing: 0.3,
-                                      ),
+                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
                                     ),
                             ),
                           ),
 
                           const SizedBox(height: 20),
 
-                          // ── Sign In Link ──────────────────────
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Sudah punya akun? ',
-                                style: TextStyle(
-                                    fontSize: 14, color: kOnSurfaceVariant),
-                              ),
+                              const Text('Sudah punya akun? ', style: TextStyle(fontSize: 14, color: kOnSurfaceVariant)),
                               GestureDetector(
                                 onTap: () => Navigator.pop(context),
                                 child: const Text(
                                   'Masuk di sini',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: kPrimary,
-                                  ),
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: kPrimary),
                                 ),
                               ),
                             ],
@@ -302,7 +335,6 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo circle
         Container(
           width: 96,
           height: 96,
@@ -322,11 +354,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
             child: Image.asset(
               'assets/images/Logo_Stunt.png',
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.child_care_rounded,
-                size: 52,
-                color: kPrimary,
-              ),
+              errorBuilder: (_, __, ___) => const Icon(Icons.child_care_rounded, size: 52, color: kPrimary),
             ),
           ),
         ),
@@ -341,14 +369,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
           ),
         ),
         const SizedBox(height: 6),
-        Text(
+        const Text(
           'Mari pantau tumbuh kembang si kecil\nbersama Stunt-Check.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.55,
-            color: kOnSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 14, height: 1.55, color: kOnSurfaceVariant),
         ),
       ],
     );
@@ -358,12 +382,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-        color: kOnSurface,
-      ),
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.4, color: kOnSurface),
     );
   }
 
@@ -376,16 +395,14 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     bool hasError = false,
     VoidCallback? onVisibilityToggle,
     TextInputType? keyboardType,
+    Function(String)? onChanged, // Menambahkan fungsi onChanged untuk Real-time check
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword ? isHidden : false,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-        color: kOnSurface,
-      ),
+      onChanged: onChanged, // Trigger ketika diketik
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: kOnSurface),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
@@ -397,9 +414,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
-                  isHidden
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+                  isHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   color: kPrimary,
                   size: 22,
                 ),
@@ -408,8 +423,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
             : null,
         filled: true,
         fillColor: kSurfaceBright,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(

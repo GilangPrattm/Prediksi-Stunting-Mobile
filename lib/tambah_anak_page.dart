@@ -156,15 +156,27 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
 
     setState(() => _isLoading = true);
 
+    int calculatedUsiaIbu = 0;
+    if (_tglLahirIbuController.text.isNotEmpty) {
+      try {
+        DateTime dob = DateTime.parse(_tglLahirIbuController.text);
+        DateTime now = DateTime.now();
+        calculatedUsiaIbu = now.year - dob.year;
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+          calculatedUsiaIbu--;
+        }
+      } catch (e) {
+        print("Error parsing tgl lahir ibu: $e");
+      }
+    }
+
     // STEP 1: Simpan data ibu ke collection profil_ibus
     Map<String, dynamic> dataKirimIbu = {
       'nama_ibu': _namaIbuController.text,
-      'email': _emailIbuController.text,
-      'no_hp': _telpIbuController.text,
-      'tgl_lahir': _tglLahirIbuController.text,
-      'tinggi_badan': double.tryParse(_tbIbuController.text) ?? 0,
-      'pendidikan': _pendidikanIbu,
-      'pekerjaan': _pekerjaanIbu,
+      'usia_ibu': calculatedUsiaIbu,
+      'tinggi_ibu': double.tryParse(_tbIbuController.text) ?? 0,
+      'pendidikan_ibu': _pendidikanIbu ?? '',
+      'pekerjaan_ibu': _pekerjaanIbu ?? '',
     };
 
     bool suksesSimpanIbu = await AnakService().simpanDataIbu(dataKirimIbu);
