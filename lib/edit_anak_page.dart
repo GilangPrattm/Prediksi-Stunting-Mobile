@@ -30,7 +30,9 @@ class _EditAnakPageState extends State<EditAnakPage> {
     super.initState();
     _nikController.text = widget.dataAnak['nik'] ?? '';
     _namaAnakController.text = widget.dataAnak['nama_anak'] ?? '';
-    _namaOrtuController.text = widget.dataAnak['nama_ortu'] ?? widget.dataAnak['nama_ibu'] ?? '';
+    _namaOrtuController.text = widget.dataAnak['nama_ortu'] ?? 
+                               (widget.dataAnak['ibu'] != null ? widget.dataAnak['ibu']['nama_ibu'] : null) ?? 
+                               widget.dataAnak['nama_ibu'] ?? '';
     _tglLahirController.text = widget.dataAnak['tgl_lahir'] ?? '';
     _tglPemeriksaanController.text = widget.dataAnak['tgl_pemeriksaan'] ?? '';
     _tbLahirController.text = widget.dataAnak['tb_lahir']?.toString() ?? '';

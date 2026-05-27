@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'chatbot_page.dart'; // Pastikan import ini sesuai dengan path chatbot kamu
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher ditambahkan
+import 'chatbot_page.dart'; 
 
 class BantuanPage extends StatefulWidget {
   const BantuanPage({super.key});
@@ -193,18 +194,34 @@ class _BantuanPageState extends State<BantuanPage> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Tombol Email Support
+                // [PERBAIKAN FITUR]: Tombol WhatsApp Support
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // Tambahkan logika mailto di sini, contoh:
-                      // launchUrlString('mailto:support@stuntcheck.com');
+                    onPressed: () async {
+                      // Format nomor HP internasional tanpa angka 0 di depan
+                      final String phoneNumber = "6285234063810"; 
+                      final String pesan = "Halo Admin Stunt-Check, aku butuh bantuan terkait penggunaan aplikasi ini nih.";
+                      
+                      // Membuat URL API WhatsApp
+                      final Uri waUrl = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(pesan)}");
+
+                      try {
+                        // Membuka aplikasi WhatsApp
+                        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                      } catch (e) {
+                        debugPrint("Gagal membuka WhatsApp: $e");
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Gagal membuka WhatsApp. Pastikan aplikasi WhatsApp terinstal.')),
+                          );
+                        }
+                      }
                     },
-                    icon: Icon(Icons.mail_outline, color: _primaryBlue, size: 22),
+                    icon: Icon(Icons.chat_bubble_outline_rounded, color: _primaryBlue, size: 22),
                     label: Text(
-                      'Email Support',
+                      'WhatsApp Support',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryBlue),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -264,7 +281,7 @@ class _BantuanPageState extends State<BantuanPage> {
                       ),
                     ),
                     child: Theme(
-                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent), // Menghilangkan garis pembatas default ExpansionTile
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent), 
                       child: ExpansionTile(
                         iconColor: _primaryBlue,
                         collapsedIconColor: Colors.grey.shade400,
