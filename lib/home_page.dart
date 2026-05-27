@@ -14,6 +14,7 @@ import 'chatbot_page.dart';
 import 'hasil_prediksi_page.dart';
 import 'riwayat_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'inspirasi_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -111,16 +112,16 @@ class _HomePageState extends State<HomePage> {
       if (resHistori.statusCode == 200) {
         final dataHistori = jsonDecode(resHistori.body);
         setState(() {
-          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed
-              .toList();
+          _daftarHistoriPrediksi = (dataHistori['data'] as List).reversed.toList();
           _isLoadingHistori = false;
         });
       } else {
         setState(() => _isLoadingHistori = false);
       }
 
+      // [PERBAIKAN BUG]: Menggunakan huruf 'l' kecil agar terbaca oleh Laravel
       final resInspirasi = await http.get(
-        Uri.parse('$_baseUrl/inspirasi'),
+        Uri.parse('$_baseUrl/inspirasi?limit=5'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (resInspirasi.statusCode == 200) {
@@ -132,7 +133,7 @@ class _HomePageState extends State<HomePage> {
         setState(() => _isLoadingInspirasi = false);
       }
     } catch (e) {
-      print("Error Fetching API: $e");
+      debugPrint("Error Fetching API: $e");
       setState(() {
         _isLoadingAnak = false;
         _isLoadingHistori = false;
@@ -147,18 +148,13 @@ class _HomePageState extends State<HomePage> {
     try {
       DateTime birthDate = DateTime.parse(tglLahirStr);
       DateTime today = DateTime.now();
-      int months =
-          (today.year - birthDate.year) * 12 + today.month - birthDate.month;
-      if (today.day < birthDate.day) {
-        months--;
-      }
+      int months = (today.year - birthDate.year) * 12 + today.month - birthDate.month;
+      if (today.day < birthDate.day) months--;
       if (months <= 0) return 'Baru Lahir';
       if (months < 12) return '$months Bulan';
       int years = months ~/ 12;
       int remainingMonths = months % 12;
-      return remainingMonths == 0
-          ? '$years Tahun'
-          : '$years Tahun $remainingMonths Bulan';
+      return remainingMonths == 0 ? '$years Tahun' : '$years Tahun $remainingMonths Bulan';
     } catch (e) {
       return '-';
     }
@@ -174,7 +170,7 @@ class _HomePageState extends State<HomePage> {
             daftarAnak: _daftarAnak,
           ),
         ),
-      ).then((_) => _fetchProfilDanAnak()); // Refresh data saat kembali
+      ).then((_) => _fetchProfilDanAnak()); 
     } else {
       setState(() => _selectedIndex = index);
     }
@@ -244,7 +240,6 @@ class _HomePageState extends State<HomePage> {
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            // [PERBAIKAN 2] Ikon Chatbot menggunakan gambar kustom Kila AI
             ClipOval(
               child: Image.asset(
                 'assets/images/kila_icon.png',
@@ -274,7 +269,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ==== WIDGET TAB 0: BERANDA ====
   Widget _buildBeranda() {
     bool hasData = !_isLoadingAnak && _daftarAnak.isNotEmpty && _isProfilIbuLengkap;
     bool isUserBaru = !_isLoadingAnak && (!_isProfilIbuLengkap || _daftarAnak.isEmpty);
@@ -496,7 +490,6 @@ class _HomePageState extends State<HomePage> {
     String teksUsia = _hitungUmur(anakAktif['tgl_lahir']);
     String tinggiBadan = anakAktif['tinggi_badan']?.toString() ?? '-';
     
-    // [PERBAIKAN 1]: Mengambil data Status Gizi dan Tgl Pemeriksaan dari histori (Real-time update)
     var riwayatAnak = _daftarHistoriPrediksi.where((r) => (r['id_anak']?.toString() ?? '') == idAnakAktif).toList();
     
     String statusGiziRaw = 'Normal';
@@ -517,16 +510,16 @@ class _HomePageState extends State<HomePage> {
     }
 
     String statusGizi = statusGiziRaw;
-    Color ringColor = const Color(0xFF10B981); // Emerald/Normal (Default)
+    Color ringColor = const Color(0xFF10B981); 
 
     if (statusGiziRaw.toLowerCase().contains('sangat stunting') || statusGiziRaw.toLowerCase().contains('sangat pendek') || statusGiziRaw.toLowerCase().contains('severely')) {
-      ringColor = const Color(0xFFE11D48); // Rose
+      ringColor = const Color(0xFFE11D48); 
       statusGizi = "Sangat Stunting";
     } else if (statusGiziRaw.toLowerCase().contains('stunting') || statusGiziRaw.toLowerCase().contains('pendek') || statusGiziRaw.toLowerCase().contains('berisiko')) {
-      ringColor = const Color(0xFFF59E0B); // Amber
+      ringColor = const Color(0xFFF59E0B); 
       statusGizi = "Stunting";
     } else if (statusGiziRaw.toLowerCase().contains('tinggi')) {
-      ringColor = _primaryBlue; // Blue
+      ringColor = _primaryBlue; 
       statusGizi = "Tinggi";
     } else {
       statusGizi = "Normal";
@@ -584,8 +577,7 @@ class _HomePageState extends State<HomePage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _anakTerpilihIndeks =
-                          (_anakTerpilihIndeks + 1) % _daftarAnak.length;
+                      _anakTerpilihIndeks = (_anakTerpilihIndeks + 1) % _daftarAnak.length;
                     });
                   },
                   child: Container(
@@ -645,7 +637,7 @@ class _HomePageState extends State<HomePage> {
                               statusGizi,
                               style: TextStyle(
                                 color: _bgHitam,
-                                fontSize: statusGizi.length > 8 ? 12 : 16, // Penyesuaian font jika teksnya panjang
+                                fontSize: statusGizi.length > 8 ? 12 : 16, 
                                 fontWeight: FontWeight.bold,
                                 height: 1.1,
                               ),
@@ -657,10 +649,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 2),
                           Text(
                             'Status Gizi',
-                            style: TextStyle(
-                              color: _outlineColor,
-                              fontSize: 10,
-                            ),
+                            style: TextStyle(color: _outlineColor, fontSize: 10),
                           ),
                         ],
                       ),
@@ -673,19 +662,13 @@ class _HomePageState extends State<HomePage> {
 
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: _surfaceContainer),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                      ),
+                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
                     ],
                   ),
                   child: Row(
@@ -697,11 +680,7 @@ class _HomePageState extends State<HomePage> {
                           color: _primaryFixed,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          Icons.height,
-                          color: _primaryBlue,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.height, color: _primaryBlue, size: 20),
                       ),
                       const SizedBox(width: 8), 
                       Expanded(
@@ -738,10 +717,7 @@ class _HomePageState extends State<HomePage> {
                                 const SizedBox(width: 4),
                                 Text(
                                   'cm',
-                                  style: TextStyle(
-                                    color: _outlineColor,
-                                    fontSize: 12,
-                                  ),
+                                  style: TextStyle(color: _outlineColor, fontSize: 12),
                                 ),
                               ],
                             ),
@@ -815,11 +791,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(
-                        Icons.add_chart_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      const Icon(Icons.add_chart_rounded, color: Colors.white, size: 28),
                       const Text(
                         'Cek Gizi\nSekarang',
                         style: TextStyle(
@@ -845,10 +817,7 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: _surfaceContainer),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                      ),
+                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10),
                     ],
                   ),
                   child: Column(
@@ -861,11 +830,7 @@ class _HomePageState extends State<HomePage> {
                           color: _primaryFixed,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          Icons.restaurant_menu,
-                          color: _primaryBlue,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.restaurant_menu, color: _primaryBlue, size: 20),
                       ),
                       Text(
                         'Rekomendasi\nResep',
@@ -900,11 +865,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   'Inspirasi Harian',
-                  style: TextStyle(
-                    color: _bgHitam,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(color: _bgHitam, fontSize: 20, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -913,22 +874,22 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                color: _primaryBlue,
-                size: 20,
+            
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const InspirasiPage()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
+                child: Icon(Icons.arrow_forward_rounded, color: _primaryBlue, size: 20),
               ),
             ),
           ],
@@ -936,22 +897,9 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 16),
 
         if (_isLoadingInspirasi)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
         else if (_daftarInspirasi.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'Belum ada tips hari ini.',
-                style: TextStyle(color: _outlineColor),
-              ),
-            ),
-          )
+          Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Belum ada tips hari ini.', style: TextStyle(color: _outlineColor))))
         else
           SizedBox(
             height: 220,
@@ -962,38 +910,26 @@ class _HomePageState extends State<HomePage> {
               itemCount: _daftarInspirasi.length,
               itemBuilder: (context, index) {
                 final artikel = _daftarInspirasi[index];
-                final bool hasImage =
-                    artikel['url_gambar'] != null &&
-                    artikel['url_gambar'].toString().isNotEmpty;
+                final bool hasImage = artikel['url_gambar'] != null && artikel['url_gambar'].toString().isNotEmpty;
                 final String kategori = artikel['kategori'] ?? 'Umum';
 
                 return GestureDetector(
                   onTap: () async {
-                    if (artikel['url_sumber'] != null &&
-                        artikel['url_sumber'].toString().isNotEmpty) {
+                    if (artikel['url_sumber'] != null && artikel['url_sumber'].toString().isNotEmpty) {
                       final url = Uri.parse(artikel['url_sumber']);
                       try {
-                        await launchUrl(
-                          url,
-                          mode: LaunchMode.externalApplication,
-                        );
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
                       } catch (e) {
-                        print("Could not launch $url: $e");
+                        debugPrint("Could not launch $url: $e");
                       }
-                    } else if (artikel['konten_lengkap'] != null &&
-                        artikel['konten_lengkap'].toString().isNotEmpty) {
+                    } else if (artikel['konten_lengkap'] != null && artikel['konten_lengkap'].toString().isNotEmpty) {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: Text(artikel['judul']),
-                          content: SingleChildScrollView(
-                            child: Text(artikel['konten_lengkap']),
-                          ),
+                          content: SingleChildScrollView(child: Text(artikel['konten_lengkap'])),
                           actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Tutup'),
-                            ),
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
                           ],
                         ),
                       );
@@ -1005,12 +941,7 @@ class _HomePageState extends State<HomePage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 10,
-                        ),
-                      ],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,62 +950,34 @@ class _HomePageState extends State<HomePage> {
                           height: 110,
                           decoration: BoxDecoration(
                             color: _primaryFixed,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                           ),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
                               if (hasImage)
                                 ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(24),
-                                    topRight: Radius.circular(24),
-                                  ),
+                                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                                   child: Image.network(
                                     artikel['url_gambar'],
                                     fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Center(
-                                          child: Icon(
-                                            Icons.broken_image,
-                                            color: _primaryBlue.withOpacity(
-                                              0.5,
-                                            ),
-                                            size: 40,
-                                          ),
-                                        ),
+                                    errorBuilder: (context, error, stackTrace) => Center(child: Icon(Icons.broken_image, color: _primaryBlue.withOpacity(0.5), size: 40)),
                                   ),
                                 ),
                               if (!hasImage)
-                                Center(
-                                  child: Icon(
-                                    Icons.article,
-                                    color: _primaryBlue.withOpacity(0.5),
-                                    size: 40,
-                                  ),
-                                ),
+                                Center(child: Icon(Icons.article, color: _primaryBlue.withOpacity(0.5), size: 40)),
                               Align(
                                 alignment: Alignment.topLeft,
                                 child: Container(
                                   margin: const EdgeInsets.all(12),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.9),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     kategori,
-                                    style: TextStyle(
-                                      color: _primaryBlue,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: TextStyle(color: _primaryBlue, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ),
@@ -1089,22 +992,14 @@ class _HomePageState extends State<HomePage> {
                               children: [
                                 Text(
                                   artikel['judul'] ?? 'Tips',
-                                  style: TextStyle(
-                                    color: _bgHitam,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.3,
-                                  ),
+                                  style: TextStyle(color: _bgHitam, fontSize: 13, fontWeight: FontWeight.bold, height: 1.3),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   artikel['deskripsi_singkat'] ?? '',
-                                  style: TextStyle(
-                                    color: _outlineColor,
-                                    fontSize: 11,
-                                  ),
+                                  style: TextStyle(color: _outlineColor, fontSize: 11),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),

@@ -20,11 +20,32 @@ class HasilPrediksiPage extends StatelessWidget {
     this.rekomendasiTerstruktur,
   });
 
-  bool get _isNormal => hasilPrediksi.toLowerCase() == 'normal';
-  Color get _primaryColor => _isNormal ? const Color(0xFF006A63) : const Color(0xFFBA1A1A);
-  Color get _primaryContainer => _isNormal ? const Color(0xFF4DB6AC) : const Color(0xFFFFDAD6);
-  Color get _onPrimaryContainer => _isNormal ? const Color(0xFF00433F) : const Color(0xFF410002);
-  Color get _warningText => const Color(0xFFE65100);
+  // --- LOGIKA WARNA DINAMIS 4 STATUS ---
+  bool get _isTinggi => hasilPrediksi.toLowerCase().contains('tinggi');
+  bool get _isStunting => hasilPrediksi.toLowerCase().contains('stunting') || hasilPrediksi.toLowerCase().contains('pendek') || hasilPrediksi.toLowerCase().contains('berisiko');
+  bool get _isSangatStunting => hasilPrediksi.toLowerCase().contains('sangat stunting') || hasilPrediksi.toLowerCase().contains('sangat pendek') || hasilPrediksi.toLowerCase().contains('severely');
+  bool get _isNormal => !_isTinggi && !_isStunting && !_isSangatStunting;
+
+  Color get _primaryColor {
+    if (_isSangatStunting) return const Color(0xFFE11D48); // Rose/Merah
+    if (_isStunting) return const Color(0xFFF59E0B); // Amber/Oranye
+    if (_isTinggi) return const Color(0xFF1978E5); // Biru
+    return const Color(0xFF10B981); // Emerald/Hijau (Normal)
+  }
+
+  Color get _primaryContainer {
+    if (_isSangatStunting) return const Color(0xFFFFE4E6);
+    if (_isStunting) return const Color(0xFFFEF3C7);
+    if (_isTinggi) return const Color(0xFFD6E3FF);
+    return const Color(0xFFD1FAE5);
+  }
+
+  Color get _onPrimaryContainer {
+    if (_isSangatStunting) return const Color(0xFF881337);
+    if (_isStunting) return const Color(0xFF78350F);
+    if (_isTinggi) return const Color(0xFF003E9C);
+    return const Color(0xFF064E3B);
+  }
 
   final Color _bgColor = const Color(0xFFF8FAFA);
   final Color _surfaceLowest = const Color(0xFFFFFFFF);
@@ -107,6 +128,10 @@ class HasilPrediksiPage extends StatelessWidget {
   }
 
   Widget _buildHeroSection(BuildContext context) {
+    IconData heroIcon = Icons.check_circle;
+    if (_isTinggi) heroIcon = Icons.height;
+    if (_isStunting || _isSangatStunting) heroIcon = Icons.warning_rounded;
+
     return Container(
       padding: const EdgeInsets.only(bottom: 48, top: 40),
       decoration: BoxDecoration(
@@ -141,7 +166,7 @@ class HasilPrediksiPage extends StatelessWidget {
                 border: Border.all(color: Colors.white.withOpacity(0.3)),
               ),
               child: Icon(
-                _isNormal ? Icons.check_circle : Icons.warning_rounded,
+                heroIcon,
                 size: 48,
                 color: Colors.white,
               ),
@@ -150,7 +175,7 @@ class HasilPrediksiPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  _isNormal ? Icons.check_circle : Icons.warning_rounded,
+                  heroIcon,
                   color: Colors.white,
                   size: 24,
                 ),
@@ -183,6 +208,15 @@ class HasilPrediksiPage extends StatelessWidget {
   }
 
   Widget _buildStatusCard() {
+    String message = '';
+    if (_isNormal) {
+      message = 'Anak anda terprediksi memiliki status gizi Normal. Pertumbuhannya sesuai dengan standar usianya. Teruskan pola makan sehat dan stimulasi yang baik.';
+    } else if (_isTinggi) {
+      message = 'Anak anda memiliki pertumbuhan tinggi badan di atas rata-rata usianya. Pastikan berat badannya juga proporsional ya, Bunda!';
+    } else {
+      message = 'Anak anda terindikasi mengalami $hasilPrediksi. Sangat disarankan untuk segera berkonsultasi dengan dokter anak atau ahli gizi di Puskesmas terdekat.';
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -199,10 +233,8 @@ class HasilPrediksiPage extends StatelessWidget {
           Text('Status Stunting', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _onSurface)),
           const SizedBox(height: 16),
           Text(
-            _isNormal 
-              ? 'Anak anda terprediksi memiliki status gizi Normal. Pertumbuhannya sesuai dengan standar usianya. Teruskan pola makan sehat dan stimulasi yang baik.'
-              : 'Anak anda terindikasi mengalami $hasilPrediksi. Sangat disarankan untuk segera berkonsultasi dengan dokter anak atau ahli gizi di Puskesmas terdekat.',
-            style: TextStyle(fontSize: 16, color: _onSurfaceVariant, height: 1.5),
+            message,
+            style: TextStyle(fontSize: 15, color: _onSurfaceVariant, height: 1.5),
           ),
         ],
       ),
@@ -228,7 +260,7 @@ class HasilPrediksiPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.psychology, color: _warningText),
+                  Icon(Icons.psychology, color: _primaryColor),
                   const SizedBox(width: 8),
                   Text('Keyakinan Model AI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _onSurface)),
                 ],
@@ -317,6 +349,17 @@ class HasilPrediksiPage extends StatelessWidget {
   }
 
   Widget _buildAlertBox() {
+    IconData boxIcon = Icons.check_circle;
+    String alertMessage = 'Pertumbuhan fisiknya sangat baik dan sesuai dengan kurva pertumbuhan anak sehat.';
+    
+    if (_isTinggi) {
+      boxIcon = Icons.info;
+      alertMessage = 'Pertumbuhan fisiknya berada di atas rata-rata usianya. Tetap pantau asupan gizi agar proporsional.';
+    } else if (_isStunting || _isSangatStunting) {
+      boxIcon = Icons.warning;
+      alertMessage = 'Perlu intervensi gizi segera. Hubungi petugas kesehatan terdekat untuk mendapatkan arahan yang tepat.';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -327,17 +370,15 @@ class HasilPrediksiPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, color: _primaryColor, size: 24),
+          Icon(boxIcon, color: _primaryColor, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: TextStyle(color: _onPrimaryContainer, fontSize: 16, height: 1.4),
+                style: TextStyle(color: _onPrimaryContainer, fontSize: 15, height: 1.4),
                 children: [
                   TextSpan(text: '$namaAnak terprediksi ${hasilPrediksi.toLowerCase()}. ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(text: _isNormal 
-                    ? 'Pertumbuhan fisiknya sangat baik dan sesuai dengan kurva pertumbuhan anak sehat.'
-                    : 'Perlu intervensi gizi segera. Hubungi petugas kesehatan terdekat untuk mendapatkan arahan yang tepat.'),
+                  TextSpan(text: alertMessage),
                 ],
               ),
             ),
@@ -375,13 +416,15 @@ class HasilPrediksiPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Saran Ahli Gizi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _onSurface)),
+                Text('Saran Ahli Gizi AI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _onSurface)),
                 const SizedBox(height: 4),
                 Text(
                   (rekomendasiTeks != null && rekomendasiTeks!.isNotEmpty) 
                     ? rekomendasiTeks! 
                     : 'Lanjutkan pemberian gizi seimbang dengan porsi yang sesuai untuk menjaga pertumbuhan optimal.',
-                  style: TextStyle(fontSize: 16, color: _onSurfaceVariant, height: 1.5),
+                  style: TextStyle(fontSize: 13, color: _onSurfaceVariant, height: 1.4),
+                  maxLines: 3, // [PERBAIKAN 1]: Membatasi teks AI agar tidak memakan tempat
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -402,11 +445,13 @@ class HasilPrediksiPage extends StatelessWidget {
       String nutrisi = kategori['nutrisi'] ?? 'Menu Pilihan';
       List<dynamic> makananList = kategori['makanan'] ?? [];
       for (var m in makananList) {
-        allRecipes.add({
-          'nutrisi': nutrisi,
-          'nama_makanan': m['nama_makanan'] ?? 'Resep Tanpa Nama',
-          'deskripsi': m['deskripsi'] ?? '',
-        });
+        if (m is Map) {
+          allRecipes.add({
+            'nutrisi': nutrisi,
+            'nama_makanan': m['nama_makanan'] ?? m['nama'] ?? m['menu'] ?? 'Resep Tanpa Nama',
+            'deskripsi': m['deskripsi'] ?? m['manfaat'] ?? '',
+          });
+        }
       }
     }
 
