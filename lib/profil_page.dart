@@ -8,6 +8,7 @@ import 'edit_anak_page.dart';
 import 'login_page.dart';
 import 'bantuan_page.dart';
 import 'ubah_sandi_page.dart';
+import 'services/auth_service.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -138,8 +139,10 @@ class _ProfilPageState extends State<ProfilPage> {
           TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
+              
+              // Tambahkan flag loading jika diperlukan, tapi ini cukup cepat
+              await AuthService().logout(); 
+
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c) => const LoginPage()), (r) => false);
             },
@@ -265,7 +268,7 @@ class _ProfilPageState extends State<ProfilPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 120), // [PERBAIKAN FITUR]: Menambah tinggi ruang bawah agar tombol logout tidak tertutup BottomNavBar
                         ],
                       ),
                     ),
