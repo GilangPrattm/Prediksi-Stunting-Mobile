@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'home_page.dart';
 import 'register_page.dart';
+import 'services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -80,20 +81,27 @@ class _LoginPageState extends State<LoginPage>
   // LOGIN
   // =========================
 
+  final AuthService _authService = AuthService();
+
   void _prosesLogin() async {
+    if (_identifierController.text.trim().isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Email/No HP dan password harus diisi'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // PASSWORD DEFAULT
-    const defaultPassword = "123456";
-
-    // AMBIL PASSWORD BARU
-    String savedPassword = prefs.getString('new_password') ?? defaultPassword;
-
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    bool sukses = _passwordController.text == savedPassword;
+    bool sukses = await _authService.login(
+      _identifierController.text.trim(),
+      _passwordController.text,
+    );
 
     setState(() => _isLoading = false);
 
@@ -102,13 +110,10 @@ class _LoginPageState extends State<LoginPage>
 
       Navigator.pushReplacement(
         context,
-
         PageRouteBuilder(
           pageBuilder: (_, a, __) => const HomePage(),
-
           transitionsBuilder: (_, a, __, child) =>
               FadeTransition(opacity: a, child: child),
-
           transitionDuration: const Duration(milliseconds: 500),
         ),
       );
@@ -117,12 +122,9 @@ class _LoginPageState extends State<LoginPage>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Password salah'),
-
+          content: const Text('Email/Nomor HP atau Password salah'),
           backgroundColor: Colors.red.shade400,
-
           behavior: SnackBarBehavior.floating,
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
