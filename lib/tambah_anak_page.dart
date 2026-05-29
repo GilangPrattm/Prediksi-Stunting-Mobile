@@ -12,18 +12,49 @@ class TambahAnakPage extends StatefulWidget {
   State<TambahAnakPage> createState() => _TambahAnakPageState();
 }
 
-class _TambahAnakPageState extends State<TambahAnakPage> {
-  // --- STATE UNTUK 2 TAMPILAN (STEPPER) ---
-  int _currentStep = 1; // 1 = Form Ibu, 2 = Form Anak
+// Model sederhana untuk menyimpan data satu anak
+class _DataAnak {
+  final TextEditingController nikCtrl = TextEditingController();
+  final TextEditingController namaCtrl = TextEditingController();
+  final TextEditingController tglLahirCtrl = TextEditingController();
+  final TextEditingController tglPemeriksaanCtrl = TextEditingController();
+  final TextEditingController tbLahirCtrl = TextEditingController();
+  final TextEditingController tbSekarangCtrl = TextEditingController();
+  String? jenisKelamin;
+
+  void dispose() {
+    nikCtrl.dispose();
+    namaCtrl.dispose();
+    tglLahirCtrl.dispose();
+    tglPemeriksaanCtrl.dispose();
+    tbLahirCtrl.dispose();
+    tbSekarangCtrl.dispose();
+  }
+}
+
+class _TambahAnakPageState extends State<TambahAnakPage>
+    with SingleTickerProviderStateMixin {
+  // --- STEP: 1 = Form Ibu, 2 = Pilih Jumlah Anak, 3 = Form Anak ---
+  int _currentStep = 1;
   bool _isLoading = false;
 
-  // --- TEMA WARNA SESUAI DESAIN ---
+  // Jumlah anak yang dipilih
+  int _jumlahAnak = 1;
+  // Indeks anak yang sedang diisi (0-based)
+  int _indexAnakAktif = 0;
+  // List data per anak
+  List<_DataAnak> _daftarDataAnak = [];
+
+  // TabController untuk navigasi antar anak
+  TabController? _tabController;
+
+  // --- TEMA WARNA ---
   final Color _bgSurface = const Color(0xFFF8F9FF);
   final Color _cardBg = const Color(0xFFFFFFFF);
   final Color _primaryBlue = const Color(0xFF1978E5);
   final Color _textMain = const Color(0xFF0B1C30);
   final Color _textOutline = const Color(0xFF717785);
-  final Color _inputBg = const Color(0xFFF8F9FF); // surface-bright
+  final Color _inputBg = const Color(0xFFF8F9FF);
 
   // ==========================================
   // CONTROLLER FORM IBU
@@ -36,25 +67,44 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
   String? _pendidikanIbu;
   String? _pekerjaanIbu;
 
-  // ==========================================
-  // CONTROLLER FORM ANAK
-  // ==========================================
-  final TextEditingController _nikController = TextEditingController();
-  final TextEditingController _namaAnakController = TextEditingController();
-  final TextEditingController _tglLahirAnakController = TextEditingController();
-  final TextEditingController _tglPemeriksaanController =
-      TextEditingController();
-  final TextEditingController _tbLahirController = TextEditingController();
-  final TextEditingController _tbSekarangController = TextEditingController();
-  String? _jenisKelaminAnak;
-
   @override
   void initState() {
     super.initState();
     _fetchDataIbuAwal();
   }
 
-  // Mengambil data awal user (jika ada) untuk pre-fill
+  @override
+  void dispose() {
+    _namaIbuController.dispose();
+    _emailIbuController.dispose();
+    _telpIbuController.dispose();
+    _tglLahirIbuController.dispose();
+    _tbIbuController.dispose();
+    _tabController?.dispose();
+    for (var d in _daftarDataAnak) {
+      d.dispose();
+    }
+    super.dispose();
+  }
+
+  // Inisialisasi list data anak sesuai jumlah yang dipilih
+  void _inisialisasiDataAnak(int jumlah) {
+    // Dispose controller lama
+    for (var d in _daftarDataAnak) {
+      d.dispose();
+    }
+    _daftarDataAnak = List.generate(jumlah, (_) => _DataAnak());
+    _indexAnakAktif = 0;
+
+    _tabController?.dispose();
+    _tabController = TabController(length: jumlah, vsync: this);
+    _tabController!.addListener(() {
+      if (!_tabController!.indexIsChanging) {
+        setState(() => _indexAnakAktif = _tabController!.index);
+      }
+    });
+  }
+
   Future<void> _fetchDataIbuAwal() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
@@ -75,11 +125,10 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         }
       }
     } catch (e) {
-      print("Gagal fetch data awal: $e");
+      debugPrint("Gagal fetch data awal: $e");
     }
   }
 
-  // Fungsi Pemilihan Tanggal Global (Bisa dipakai Ibu & Anak)
   Future<void> _pilihTanggal(
     BuildContext context,
     TextEditingController controller,
@@ -111,49 +160,65 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
     }
   }
 
-  // Lanjut dari Form Ibu ke Form Anak
-  void _lanjutKeDataAnak() {
+  // ─── NAVIGASI ───────────────────────────────────────────────
+
+  void _lanjutKeStep2() {
     if (_namaIbuController.text.isEmpty ||
         _tglLahirIbuController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Mohon lengkapi Nama dan Tanggal Lahir Bunda terlebih dahulu.',
-          ),
-          backgroundColor: Colors.red,
-        ),
+      _showSnackbar(
+        'Mohon lengkapi Nama dan Tanggal Lahir Bunda terlebih dahulu.',
+        isError: true,
       );
       return;
     }
-    setState(() {
-      _currentStep = 2; // Pindah ke layar 2
-    });
+    setState(() => _currentStep = 2);
   }
 
-  // Kembali dari Form Anak ke Form Ibu
-  void _kembaliKeDataIbu() {
-    setState(() {
-      _currentStep = 1;
-    });
+  void _lanjutKeFormAnak() {
+    _inisialisasiDataAnak(_jumlahAnak);
+    setState(() => _currentStep = 3);
   }
 
-  // Fungsi Final: Simpan Semua Data (Fokus utamanya simpan anak dari kodemu sebelumnya)
+  void _kembali() {
+    if (_currentStep == 2) {
+      setState(() => _currentStep = 1);
+    } else if (_currentStep == 3) {
+      setState(() => _currentStep = 2);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  // Cek apakah anak aktif sudah terisi field wajib
+  bool _anakAktifValid() {
+    final d = _daftarDataAnak[_indexAnakAktif];
+    return d.nikCtrl.text.isNotEmpty &&
+        d.namaCtrl.text.isNotEmpty &&
+        d.tglLahirCtrl.text.isNotEmpty &&
+        d.jenisKelamin != null;
+  }
+
+  void _lanjutAtauSimpan() {
+    if (!_anakAktifValid()) {
+      _showSnackbar(
+        'Lengkapi data Anak ${_indexAnakAktif + 1} terlebih dahulu ya Bunda!',
+        isError: true,
+      );
+      return;
+    }
+
+    if (_indexAnakAktif < _jumlahAnak - 1) {
+      // Masih ada anak berikutnya → pindah tab
+      _tabController!.animateTo(_indexAnakAktif + 1);
+    } else {
+      // Semua anak sudah diisi → simpan
+      _prosesSimpanFinal();
+    }
+  }
+
+  // ─── SIMPAN ─────────────────────────────────────────────────
+
   void _prosesSimpanFinal() async {
-    if (_nikController.text.isEmpty ||
-        _namaAnakController.text.isEmpty ||
-        _tglLahirAnakController.text.isEmpty ||
-        _jenisKelaminAnak == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Selesaikan isian Identitas Anak secara lengkap ya Bunda!',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     int calculatedUsiaIbu = 0;
@@ -162,16 +227,17 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         DateTime dob = DateTime.parse(_tglLahirIbuController.text);
         DateTime now = DateTime.now();
         calculatedUsiaIbu = now.year - dob.year;
-        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+        if (now.month < dob.month ||
+            (now.month == dob.month && now.day < dob.day)) {
           calculatedUsiaIbu--;
         }
       } catch (e) {
-        print("Error parsing tgl lahir ibu: $e");
+        debugPrint("Error parsing tgl lahir ibu: $e");
       }
     }
 
-    // STEP 1: Simpan data ibu ke collection profil_ibus
-    Map<String, dynamic> dataKirimIbu = {
+    // Simpan data ibu
+    final dataKirimIbu = {
       'nama_ibu': _namaIbuController.text,
       'usia_ibu': calculatedUsiaIbu,
       'tinggi_ibu': double.tryParse(_tbIbuController.text) ?? 0,
@@ -184,50 +250,102 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
     if (!suksesSimpanIbu) {
       setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal menyimpan data ibu. Coba lagi.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackbar('Gagal menyimpan data ibu. Coba lagi.', isError: true);
       return;
     }
 
-    // STEP 2: Jika data ibu sukses, simpan data anak
-    Map<String, dynamic> dataKirimAnak = {
-      'nik': _nikController.text,
-      'nama_anak': _namaAnakController.text,
-      'nama_ortu': _namaIbuController.text, // Diambil dari inputan form Ibu
-      'jenis_kelamin': _jenisKelaminAnak,
-      'tgl_lahir': _tglLahirAnakController.text,
-      'tgl_pemeriksaan': _tglPemeriksaanController.text,
-      'tb_lahir': double.tryParse(_tbLahirController.text) ?? 0,
-      'tinggi_badan': double.tryParse(_tbSekarangController.text) ?? 0,
-    };
+    // Simpan semua data anak secara berurutan
+    bool semuaSukses = true;
+    for (int i = 0; i < _daftarDataAnak.length; i++) {
+      final d = _daftarDataAnak[i];
+      final dataKirimAnak = {
+        'nik': d.nikCtrl.text,
+        'nama_anak': d.namaCtrl.text,
+        'nama_ortu': _namaIbuController.text,
+        'jenis_kelamin': d.jenisKelamin,
+        'tgl_lahir': d.tglLahirCtrl.text,
+        'tgl_pemeriksaan': d.tglPemeriksaanCtrl.text,
+        'tb_lahir': double.tryParse(d.tbLahirCtrl.text) ?? 0,
+        'tinggi_badan': double.tryParse(d.tbSekarangCtrl.text) ?? 0,
+      };
 
-    bool sukses = await AnakService().simpanData(dataKirimAnak);
+      bool sukses = await AnakService().simpanData(dataKirimAnak);
+      if (!sukses) {
+        semuaSukses = false;
+        if (mounted) {
+          _showSnackbar(
+            'Gagal menyimpan data Anak ${i + 1}. Coba lagi.',
+            isError: true,
+          );
+        }
+        break;
+      }
+    }
 
     setState(() => _isLoading = false);
 
-    if (sukses) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data berhasil disimpan!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context); // Kembali ke Home
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal menyimpan data.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (semuaSukses && mounted) {
+      _showSnackbar('Semua data berhasil disimpan!');
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) Navigator.pop(context);
     }
   }
+
+  // ─── HELPER ─────────────────────────────────────────────────
+
+  void _showSnackbar(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  String _labelLangkah() {
+    switch (_currentStep) {
+      case 1:
+        return 'Langkah 1 dari 3';
+      case 2:
+        return 'Langkah 2 dari 3';
+      case 3:
+        return 'Langkah 3 dari 3';
+      default:
+        return '';
+    }
+  }
+
+  String _judulAppBar() {
+    switch (_currentStep) {
+      case 1:
+        return 'Data Bunda';
+      case 2:
+        return 'Jumlah Anak';
+      case 3:
+        if (_daftarDataAnak.isNotEmpty) {
+          return 'Data Anak ${_indexAnakAktif + 1} dari $_jumlahAnak';
+        }
+        return 'Data Anak';
+      default:
+        return '';
+    }
+  }
+
+  String _labelTombol() {
+    if (_currentStep == 1) return 'Lanjut ke Jumlah Anak';
+    if (_currentStep == 2) return 'Mulai Isi Data Anak';
+    // Step 3
+    if (_indexAnakAktif < _jumlahAnak - 1) {
+      return 'Lanjut ke Anak ${_indexAnakAktif + 2}';
+    }
+    return 'Simpan Semua Data';
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -239,139 +357,173 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: _textMain),
-          onPressed: () {
-            if (_currentStep == 2) {
-              _kembaliKeDataIbu(); // Jika di step 2, back button kembali ke step 1
-            } else {
-              Navigator.pop(context); // Jika di step 1, keluar halaman
-            }
-          },
+          onPressed: _kembali,
         ),
-        title: Text(
-          _currentStep == 1 ? 'Lengkapi Data Ibu' : 'Lengkapi Data Anak',
-          style: TextStyle(
-            color: _textMain,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            _judulAppBar(),
+            key: ValueKey(_judulAppBar()),
+            style: TextStyle(
+              color: _textMain,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
       body: Column(
         children: [
-          // INDICATOR STEPPER
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Langkah $_currentStep dari 2',
-                  style: TextStyle(
-                    color: _primaryBlue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      height: 8,
-                      width: _currentStep >= 1 ? 32 : 16,
-                      decoration: BoxDecoration(
-                        color: _currentStep >= 1
-                            ? _primaryBlue
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      height: 8,
-                      width: _currentStep == 2 ? 32 : 16,
-                      decoration: BoxDecoration(
-                        color: _currentStep == 2
-                            ? _primaryBlue
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // ── STEPPER INDICATOR ──
+          _buildStepperIndicator(),
 
+          // ── KONTEN ──
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              physics: const BouncingScrollPhysics(),
-              // AnimatedSwitcher untuk transisi halus antara Form Ibu dan Form Anak
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _currentStep == 1 ? _buildFormIbu() : _buildFormAnak(),
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _currentStep == 1
+                  ? SingleChildScrollView(
+                      key: const ValueKey('step1'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      child: _buildFormIbu(),
+                    )
+                  : _currentStep == 2
+                  ? SingleChildScrollView(
+                      key: const ValueKey('step2'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      child: _buildPilihJumlahAnak(),
+                    )
+                  : _buildFormAnakMulti(),
             ),
           ),
 
-          // BOTTOM BUTTON
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: _bgSurface,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          // ── BOTTOM BUTTON ──
+          _buildBottomButton(),
+        ],
+      ),
+    );
+  }
+
+  // ─── STEPPER INDICATOR ──────────────────────────────────────
+
+  Widget _buildStepperIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _labelLangkah(),
+            style: TextStyle(
+              color: _primaryBlue,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : (_currentStep == 1
-                          ? _lanjutKeDataAnak
-                          : _prosesSimpanFinal),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+          ),
+          Row(
+            children: List.generate(3, (i) {
+              final active = _currentStep >= (i + 1);
+              return Row(
+                children: [
+                  if (i > 0) const SizedBox(width: 6),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    height: 8,
+                    width: active ? 32 : 16,
+                    decoration: BoxDecoration(
+                      color: active ? _primaryBlue : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  elevation: 2,
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _currentStep == 1
-                                ? 'Lanjut ke Data Anak'
-                                : 'Simpan Semua Data',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (_currentStep == 1) ...[
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ],
-                        ],
-                      ),
-              ),
-            ),
+                ],
+              );
+            }),
           ),
         ],
       ),
     );
   }
 
-  // ==========================================
-  // WIDGET TAMPILAN 1: FORM IBU
-  // ==========================================
+  // ─── BOTTOM BUTTON ──────────────────────────────────────────
+
+  Widget _buildBottomButton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _bgSurface,
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 55,
+        child: ElevatedButton(
+          onPressed: _isLoading
+              ? null
+              : () {
+                  if (_currentStep == 1) {
+                    _lanjutKeStep2();
+                  } else if (_currentStep == 2) {
+                    _lanjutKeFormAnak();
+                  } else {
+                    _lanjutAtauSimpan();
+                  }
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _primaryBlue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: 2,
+          ),
+          child: _isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _labelTombol(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (_currentStep < 3 ||
+                        (_currentStep == 3 &&
+                            _indexAnakAktif < _jumlahAnak - 1)) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ] else ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // STEP 1 — FORM IBU
+  // ============================================================
+
   Widget _buildFormIbu() {
     return Column(
       key: const ValueKey('form_ibu'),
@@ -403,7 +555,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 'Masukkan nama lengkap',
                 Icons.person_outline,
               ),
-
               _buildLabel('Alamat Email'),
               _buildCustomTextField(
                 _emailIbuController,
@@ -411,7 +562,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 Icons.mail_outline,
                 isReadOnly: true,
               ),
-
               _buildLabel('Nomor Telepon'),
               _buildCustomTextField(
                 _telpIbuController,
@@ -420,14 +570,12 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 inputType: TextInputType.phone,
                 isReadOnly: true,
               ),
-
               _buildLabel('Tanggal Lahir'),
               _buildDateTextField(
                 _tglLahirIbuController,
                 'Pilih Tanggal',
                 context,
               ),
-
               _buildLabel('Tinggi Badan (cm)'),
               _buildCustomTextField(
                 _tbIbuController,
@@ -435,7 +583,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 Icons.straighten,
                 inputType: TextInputType.number,
               ),
-
               _buildLabel('Pendidikan Terakhir'),
               _buildCustomDropdown(
                 value: _pendidikanIbu,
@@ -444,7 +591,6 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
                 items: ['SMA/Sederajat', 'D3', 'S1', 'S2', 'Lainnya'],
                 onChanged: (val) => setState(() => _pendidikanIbu = val),
               ),
-
               _buildLabel('Pekerjaan Saat Ini'),
               _buildCustomDropdown(
                 value: _pekerjaanIbu,
@@ -462,73 +608,263 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
             ],
           ),
         ),
+        const SizedBox(height: 20),
       ],
     );
   }
 
-  // ==========================================
-  // WIDGET TAMPILAN 2: FORM ANAK
-  // ==========================================
-  Widget _buildFormAnak() {
+  // ============================================================
+  // STEP 2 — PILIH JUMLAH ANAK
+  // ============================================================
+
+  Widget _buildPilihJumlahAnak() {
     return Column(
-      key: const ValueKey('form_anak'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildInfoBanner(
-          'Pastikan data disalin dengan benar dari Buku KIA ya Bunda agar Kila AI bisa memantau.',
-          Icons.stars,
+          'Berapa jumlah anak yang ingin didaftarkan? Data setiap anak akan diisi secara terpisah.',
+          Icons.child_friendly_outlined,
         ),
-        const SizedBox(height: 20),
-
-        // SECTION 1: IDENTITAS ANAK
+        const SizedBox(height: 24),
         Text(
-          '1. Identitas Anak',
+          'Pilih jumlah anak',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
             color: _textMain,
           ),
         ),
+        const SizedBox(height: 16),
+
+        // Grid pilihan angka 1–4
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1,
+          ),
+          itemCount: 4,
+          itemBuilder: (_, i) {
+            final angka = i + 1;
+            final dipilih = _jumlahAnak == angka;
+            return GestureDetector(
+              onTap: () => setState(() => _jumlahAnak = angka),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: dipilih ? _primaryBlue : _cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: dipilih ? _primaryBlue : Colors.grey.shade200,
+                    width: dipilih ? 2 : 1,
+                  ),
+                  boxShadow: dipilih
+                      ? [
+                          BoxShadow(
+                            color: _primaryBlue.withOpacity(0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                          ),
+                        ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$angka',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: dipilih ? Colors.white : _textMain,
+                      ),
+                    ),
+                    Text(
+                      'anak',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: dipilih ? Colors.white70 : _textOutline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 28),
+
+        // Ringkasan pilihan
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            key: ValueKey(_jumlahAnak),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF4FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFDCE9FF)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: _primaryBlue, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Kamu akan mengisi data untuk $_jumlahAnak '
+                    '${_jumlahAnak == 1 ? 'anak' : 'anak'}. '
+                    'Setiap anak memiliki form terpisah.',
+                    style: TextStyle(
+                      color: _textMain,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ============================================================
+  // STEP 3 — FORM ANAK (MULTI-TAB)
+  // ============================================================
+
+  Widget _buildFormAnakMulti() {
+    if (_daftarDataAnak.isEmpty || _tabController == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      key: const ValueKey('step3'),
+      children: [
+        // ── TAB BAR (hanya tampil jika anak > 1) ──
+        if (_jumlahAnak > 1)
+          Container(
+            color: _bgSurface,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: _jumlahAnak > 3,
+              labelColor: _primaryBlue,
+              unselectedLabelColor: _textOutline,
+              indicatorColor: _primaryBlue,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+              tabs: List.generate(
+                _jumlahAnak,
+                (i) => Tab(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.accessibility_new_rounded,
+                        size: 16,
+                        color: _indexAnakAktif == i
+                            ? _primaryBlue
+                            : _textOutline,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('Anak ${i + 1}'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // ── KONTEN PER ANAK ──
+        Expanded(
+          child: _jumlahAnak == 1
+              // Jika hanya 1 anak: langsung tampilkan form
+              ? SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  physics: const BouncingScrollPhysics(),
+                  child: _buildFormAnakSatu(0),
+                )
+              // Jika > 1: gunakan TabBarView
+              : TabBarView(
+                  controller: _tabController,
+                  children: List.generate(
+                    _jumlahAnak,
+                    (i) => SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      child: _buildFormAnakSatu(i),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  // Form untuk satu anak (berdasarkan index)
+  Widget _buildFormAnakSatu(int index) {
+    final d = _daftarDataAnak[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInfoBanner(
+          'Pastikan data Anak ${index + 1} disalin dengan benar dari Buku KIA ya Bunda.',
+          Icons.stars,
+        ),
+        const SizedBox(height: 20),
+
+        // SECTION 1: IDENTITAS
+        _buildSectionTitle('1. Identitas Anak ${index + 1}'),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _cardBg,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: _primaryBlue.withOpacity(0.05), blurRadius: 15),
-            ],
-          ),
+          decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLabel('NIK Anak'),
               _buildCustomTextField(
-                _nikController,
+                d.nikCtrl,
                 'Contoh: 3509xxxxxxxxxxxx',
                 Icons.badge_outlined,
                 inputType: TextInputType.number,
               ),
-
               _buildLabel('Nama Lengkap Anak'),
               _buildCustomTextField(
-                _namaAnakController,
-                'Contoh: Budi Kusuma',
-                Icons.child_care,
+                d.namaCtrl,
+                'Contoh: Sal Priadi',
+                Icons.accessibility_new_rounded,
               ),
-
               _buildLabel('Jenis Kelamin'),
-              _buildCustomDropdown(
-                value: _jenisKelaminAnak,
+              _buildCustomDropdownDynamic(
+                value: d.jenisKelamin,
                 hint: 'Pilih Jenis Kelamin',
                 icon: Icons.wc_outlined,
                 items: ['Laki-laki', 'Perempuan'],
-                onChanged: (val) => setState(() => _jenisKelaminAnak = val),
+                onChanged: (val) => setState(() => d.jenisKelamin = val),
               ),
-
               _buildLabel('Tanggal Lahir'),
               _buildDateTextField(
-                _tglLahirAnakController,
+                d.tglLahirCtrl,
                 'Pilih Tanggal Lahir',
                 context,
               ),
@@ -538,39 +874,20 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         const SizedBox(height: 20),
 
         // SECTION 2: DATA KELAHIRAN
-        Text(
-          '2. Data Kelahiran',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: _textMain,
-          ),
-        ),
+        _buildSectionTitle('2. Data Kelahiran'),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _cardBg,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: _primaryBlue.withOpacity(0.05), blurRadius: 15),
-            ],
-          ),
-          child: Row(
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel('TB Lahir (cm)'),
-                    _buildCustomTextField(
-                      _tbLahirController,
-                      'Misal: 49',
-                      Icons.height_outlined,
-                      inputType: TextInputType.number,
-                    ),
-                  ],
-                ),
+              _buildLabel('TB Lahir (cm)'),
+              _buildCustomTextField(
+                d.tbLahirCtrl,
+                'Misal: 49',
+                Icons.height_outlined,
+                inputType: TextInputType.number,
               ),
             ],
           ),
@@ -578,62 +895,59 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         const SizedBox(height: 20),
 
         // SECTION 3: PEMERIKSAAN POSYANDU
-        Text(
-          '3. Pemeriksaan Terakhir di Posyandu',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: _textMain,
-          ),
-        ),
+        _buildSectionTitle('3. Pemeriksaan Terakhir di Posyandu'),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _cardBg,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: _primaryBlue.withOpacity(0.05), blurRadius: 15),
-            ],
-          ),
+          decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLabel('Tanggal Terakhir Periksa'),
               _buildDateTextField(
-                _tglPemeriksaanController,
+                d.tglPemeriksaanCtrl,
                 'Pilih Tanggal',
                 context,
               ),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('TB Saat Ini (cm)'),
-                        _buildCustomTextField(
-                          _tbSekarangController,
-                          'Misal: 82',
-                          Icons.straighten_outlined,
-                          inputType: TextInputType.number,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              _buildLabel('TB Saat Ini (cm)'),
+              _buildCustomTextField(
+                d.tbSekarangCtrl,
+                'Misal: 82',
+                Icons.straighten_outlined,
+                inputType: TextInputType.number,
               ),
             ],
           ),
         ),
+        const SizedBox(height: 20),
       ],
     );
   }
 
-  // ==========================================
-  // WIDGET REUSABLE (Agar Kode Rapi & Bersih)
-  // ==========================================
+  // ============================================================
+  // REUSABLE WIDGETS
+  // ============================================================
+
+  Widget _buildSectionTitle(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: _textMain,
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: _cardBg,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(color: _primaryBlue.withOpacity(0.05), blurRadius: 15),
+      ],
+    );
+  }
 
   Widget _buildInfoBanner(String text, IconData icon) {
     return Container(
@@ -744,6 +1058,7 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
     );
   }
 
+  // Dropdown untuk data ibu (state di-manage di state class)
   Widget _buildCustomDropdown({
     required String? value,
     required String hint,
@@ -773,9 +1088,46 @@ class _TambahAnakPageState extends State<TambahAnakPage> {
         style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
       ),
       style: TextStyle(color: _textMain, fontSize: 14),
-      items: items.map((String val) {
-        return DropdownMenuItem<String>(value: val, child: Text(val));
-      }).toList(),
+      items: items
+          .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  // Dropdown untuk data anak per-item (state di _DataAnak)
+  Widget _buildCustomDropdownDynamic({
+    required String? value,
+    required String hint,
+    required IconData icon,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: _primaryBlue.withOpacity(0.7), size: 22),
+        filled: true,
+        fillColor: _inputBg,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _primaryBlue, width: 1.5),
+        ),
+      ),
+      hint: Text(
+        hint,
+        style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+      ),
+      style: TextStyle(color: _textMain, fontSize: 14),
+      items: items
+          .map((v) => DropdownMenuItem<String>(value: v, child: Text(v)))
+          .toList(),
       onChanged: onChanged,
     );
   }
