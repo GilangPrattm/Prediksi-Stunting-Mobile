@@ -146,85 +146,41 @@ class _MpasiPageState extends State<MpasiPage> {
     _fetchHistoriMpasi();
   }
 
-  // --- FETCH API HISTORY LARAVEL ---
+  // --- FETCH API MAKANAN LARAVEL ---
   Future<void> _fetchHistoriMpasi() async {
-    if (widget.daftarAnak.isEmpty) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString('token');
 
-      var anakAktif = widget.daftarAnak[widget.anakTerpilihIndeks];
-      String idAnak =
-          anakAktif['_id']?.toString() ?? anakAktif['id']?.toString() ?? '';
-
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/riwayat/$idAnak'),
+        Uri.parse('${ApiConfig.baseUrl}/makanan'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        List<dynamic> riwayatList = data['data'] ?? [];
+        List<dynamic> makananList = data['data'] ?? [];
 
-        var riwayatTerbaru = riwayatList.firstWhere(
-          (item) =>
-              (item['rekomendasi_terstruktur'] != null &&
-                  (item['rekomendasi_terstruktur'] as List).isNotEmpty) ||
-              (item['rekomendasi_data'] != null &&
-                  (item['rekomendasi_data'] as List).isNotEmpty),
-          orElse: () => null,
-        );
-
-        if (riwayatTerbaru != null) {
-          List<dynamic> struktur =
-              riwayatTerbaru['rekomendasi_terstruktur'] ??
-              riwayatTerbaru['rekomendasi_data'] ??
-              [];
+        if (makananList.isNotEmpty) {
           List<Map<String, dynamic>> resepDiekstrak = [];
           Set<String> setKategori = {'Semua'};
 
-          for (var kategori in struktur) {
-            String nutrisi =
-                kategori['nutrisi'] ?? kategori['kategori'] ?? 'Menu Lainnya';
+          for (var makanan in makananList) {
+            String nutrisi = (makanan['nutrisi'] != null && makanan['nutrisi']['nama_nutrisi'] != null)
+                ? makanan['nutrisi']['nama_nutrisi']
+                : 'Menu Lainnya';
+                
             setKategori.add(nutrisi);
 
-            for (var makanan
-                in (kategori['makanan'] ?? kategori['menu'] ?? [])) {
-              // [PERBAIKAN LOGIKA]: Membaca berbagai kemungkinan nama kunci (key) dari Gemini AI
-              if (makanan is Map) {
-                String namaMakanan =
-                    makanan['nama_makanan'] ??
-                    makanan['nama'] ??
-                    makanan['menu'] ??
-                    makanan['judul'] ??
-                    'Tanpa Nama';
-                String deskripsi =
-                    makanan['deskripsi'] ??
-                    makanan['manfaat'] ??
-                    makanan['keterangan'] ??
-                    'Menu sehat rekomendasi AI untuk si Kecil.';
+            String namaMakanan = makanan['nama_makanan'] ?? makanan['nama'] ?? makanan['menu'] ?? 'Tanpa Nama';
+            String deskripsi = makanan['deskripsi'] ?? makanan['manfaat'] ?? 'Menu sehat rekomendasi AI untuk si Kecil.';
 
-                resepDiekstrak.add({
-                  'kategori': nutrisi,
-                  'nama_makanan': namaMakanan,
-                  'deskripsi': deskripsi,
-                  'img': _getImageAsset(namaMakanan),
-                });
-              } else if (makanan is String) {
-                // Jaga-jaga jika AI mengembalikan data berupa list string langsung, bukan object
-                resepDiekstrak.add({
-                  'kategori': nutrisi,
-                  'nama_makanan': makanan,
-                  'deskripsi':
-                      'Sangat disarankan untuk melengkapi kebutuhan gizi anak Anda.',
-                  'img': _getImageAsset(makanan),
-                });
-              }
-            }
+            resepDiekstrak.add({
+              'kategori': nutrisi,
+              'nama_makanan': namaMakanan,
+              'deskripsi': deskripsi,
+              'img': _getImageAsset(namaMakanan),
+            });
           }
 
           if (mounted) {
