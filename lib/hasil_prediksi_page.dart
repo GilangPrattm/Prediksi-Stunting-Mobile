@@ -416,15 +416,13 @@ class HasilPrediksiPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Saran Ahli Gizi AI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _onSurface)),
+                Text('Saran Dari Kila AI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _onSurface)),
                 const SizedBox(height: 4),
                 Text(
                   (rekomendasiTeks != null && rekomendasiTeks!.isNotEmpty) 
                     ? rekomendasiTeks! 
                     : 'Lanjutkan pemberian gizi seimbang dengan porsi yang sesuai untuk menjaga pertumbuhan optimal.',
                   style: TextStyle(fontSize: 13, color: _onSurfaceVariant, height: 1.4),
-                  maxLines: 3, // [PERBAIKAN 1]: Membatasi teks AI agar tidak memakan tempat
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -436,7 +434,26 @@ class HasilPrediksiPage extends StatelessWidget {
 
   Widget _buildHorizontalRecipesList(BuildContext context) {
     if (rekomendasiTerstruktur == null || rekomendasiTerstruktur!.isEmpty) {
-      return const Text('Belum ada rekomendasi terstruktur.', style: TextStyle(color: Colors.grey));
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7ED), // Oranye sangat muda
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFFEDD5)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.restaurant_menu, color: Color(0xFFF97316)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Terus berikan gizi seimbang seperti karbohidrat (nasi/kentang), protein hewani (telur/ikan), dan sayuran untuk mendukung masa emas si kecil.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     // Meratakan seluruh makanan dari semua nutrisi ke dalam satu list
@@ -453,6 +470,10 @@ class HasilPrediksiPage extends StatelessWidget {
           });
         }
       }
+    }
+
+    if (allRecipes.isEmpty) {
+       return const Text('Format rekomendasi menu dari sistem tidak sesuai.', style: TextStyle(color: Colors.grey));
     }
 
     return SizedBox(
